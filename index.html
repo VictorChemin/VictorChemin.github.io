@@ -475,185 +475,20 @@ h1 em{font-style:italic;color:var(--gold)}
 
 <script>
 // ═══════════════════════════════════════════════════
-// ENCODAGE COMPACT — base62 sur bytes bruts
+// SDP PACK / UNPACK
 // ═══════════════════════════════════════════════════
-// Stratégie :
-//   On extrait les champs variables du SDP (ufrag, pwd, fingerprint, 1 candidate)
-//   On les encode en binaire brut, puis en base62 (0-9 a-z A-Z)
-//   Résultat : ~35-45 chars au lieu de ~600 chars base64
-//
-//   Structure binaire du payload (offer) :
-//     [1B  version=1]
-//     [4B  ufrag     — 4 chars ASCII ICE]
-//     [24B pwd       — 24 chars ASCII ICE (browser génère 22-24)]
-//     [32B fp        — fingerprint SHA-256 brut (32 bytes)]
-//     [4B  ip        — IPv4 de la meilleure candidate]
-//     [2B  port      — port UDP]
-//     [1B  flags     — bits: couleur(2) | timer_idx(4) | custom(1) | reserved(1)]
-//     [2B  cmin      — minutes custom (si flags.custom)]
-//     [2B  cinc      — increment custom]
-//   Total fixe : 1+4+24+32+4+2+1 = 68 bytes → ~91 chars base62
-//   Avec custom timer : +4 bytes → 72 bytes → ~96 chars base62
-//
-//   Pour l'answer (réponse guest) :
-//     [1B  version=2]
-//     [4B  ufrag]
-//     [24B pwd]
-//     [32B fp]
-//     [4B  ip]
-//     [2B  port]
-//   Total : 67 bytes → ~90 chars base62
-//
-//   Optimisation clé : on prend pwd sur 24 bytes (padding 0 si < 24)
-//   et fingerprint complet (32 bytes) pour la sécurité DTLS.
-//
-// → Dans la pratique on observe 38-48 chars pour une candidate host locale.
-
-const B62='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-function bytesToB62(buf){
-  // BigInt pour convertir les bytes en base62
-  let n=0n;
-  for(const b of buf)n=(n<<8n)|BigInt(b);
-  if(n===0n)return'0';
-  let s='';
-  while(n>0n){s=B62[Number(n%62n)]+s;n/=62n;}
-  return s;
-}
-
-function b62ToBytes(s,len){
-  let n=0n;
-  for(const c of s){const i=B62.indexOf(c);if(i<0)throw new Error('bad b62');n=n*62n+BigInt(i);}
-  const buf=new Uint8Array(len);
-  for(let i=len-1;i>=0;i--){buf[i]=Number(n&0xffn);n>>=8n;}
-  return buf;
-}
-
-const TIMERS=['none','1+0','2+1','3+0','3+2','5+0','5+3','10+0','custom'];
-
-function sdpToFields(sdp){
-  const g=re=>(sdp.match(re)||[])[1]||'';
-  const ufrag=g(/a=ice-ufrag:(\S+)/);
-  const pwd=g(/a=ice-pwd:(\S+)/);
-  const fpHex=g(/a=fingerprint:sha-256 ([\dA-Fa-f:]+)/).replace(/:/g,'');
-  // Choisir la meilleure candidate : préférer srflx (public) sinon host
-  const cands=[...sdp.matchAll(/a=candidate:[^\r\n]+/g)].map(m=>m[0]);
-  let best=null;
-  for(const c of cands){
-    if(c.includes('typ srflx')){best=c;break;}
-  }
-  if(!best)for(const c of cands){if(c.includes('typ host')){best=c;break;}}
-  if(!best&&cands.length)best=cands[0];
-  let ip='0.0.0.0',port=0;
-  if(best){
-    const m=best.match(/(\d+\.\d+\.\d+\.\d+)\s+(\d+)\s+typ/);
-    if(m){ip=m[1];port=parseInt(m[2]);}
-  }
-  return{ufrag,pwd,fpHex,ip,port};
-}
-
-function packOffer(sdp,color,timerStr){
-  const{ufrag,pwd,fpHex,ip,port}=sdpToFields(sdp);
-  const buf=new Uint8Array(72);
-  let i=0;
-  // version
-  buf[i++]=1;
-  // ufrag (4 bytes, padded)
-  for(let k=0;k<4;k++)buf[i++]=ufrag.charCodeAt(k)||0;
-  // pwd (24 bytes, padded/truncated)
-  for(let k=0;k<24;k++)buf[i++]=pwd.charCodeAt(k)||0;
-  // fingerprint (32 bytes)
-  for(let k=0;k<32;k++)buf[i++]=parseInt(fpHex.slice(k*2,k*2+2)||'00',16);
-  // ip
-  ip.split('.').forEach(o=>buf[i++]=parseInt(o));
-  // port
-  buf[i++]=(port>>8)&0xff;buf[i++]=port&0xff;
-  // timer index
-  let tidx=TIMERS.indexOf(timerStr);if(tidx<0)tidx=8;
-  // couleur: 0=white,1=black,2=random
-  const cidx=color==='white'?0:color==='black'?1:2;
-  // flags byte: bits 7-6=couleur, bits 5-2=timer, bit 1=custom
-  const isCustom=timerStr.startsWith('c:');
-  buf[i++]=(cidx<<6)|(tidx<<2)|(isCustom?1:0);
-  // custom minutes/increment
-  if(isCustom){
-    const[,cm,ci]=timerStr.split(':');
-    const cmin=parseInt(cm)||15,cinc=parseInt(ci)||0;
-    buf[i++]=(cmin>>8)&0xff;buf[i++]=cmin&0xff;
-    buf[i++]=(cinc>>8)&0xff;buf[i++]=cinc&0xff;
-  }
-  return bytesToB62(buf.slice(0,i));
-}
-
-function unpackOffer(code){
-  // Détecter la longueur : sans custom=68 bytes, avec=72
-  // On décode en essayant 68 bytes d'abord
-  let len=68;
-  // Heuristique : si le code est plus long que ce que 68 bytes produiraient, c'est 72
-  const base68=Math.ceil(68*8/Math.log2(62));
-  if(code.length>base68+2)len=72;
-  const buf=b62ToBytes(code,len);
-  let i=0;
-  const ver=buf[i++];
-  if(ver!==1)throw new Error('bad version');
-  const ufrag=String.fromCharCode(...buf.slice(i,i+4)).replace(/\0/g,'');i+=4;
-  const pwd=String.fromCharCode(...buf.slice(i,i+24)).replace(/\0/g,'');i+=24;
-  const fpBytes=buf.slice(i,i+32);i+=32;
-  const fp=[...fpBytes].map(b=>b.toString(16).padStart(2,'0')).join(':').toUpperCase();
-  const ip=buf.slice(i,i+4).join('.');i+=4;
-  const port=(buf[i]<<8)|buf[i+1];i+=2;
-  const flags=buf[i++];
-  const cidx=(flags>>6)&0x3;
-  const tidx=(flags>>2)&0xf;
-  const isCustom=flags&0x1;
-  const color=cidx===0?'white':cidx===1?'black':'random';
-  let timer=TIMERS[tidx]||'none';
-  if(isCustom){
-    const cmin=(buf[i]<<8)|buf[i+1];i+=2;
-    const cinc=(buf[i]<<8)|buf[i+1];i+=2;
-    timer=`c:${cmin}:${cinc}`;
-  }
-  const candidate=`0 1 UDP 2122252543 ${ip} ${port} typ host`;
-  return{ufrag,pwd,fp,ip,port,color,timer,candidate};
-}
-
-function packAnswer(sdp){
-  const{ufrag,pwd,fpHex,ip,port}=sdpToFields(sdp);
-  const buf=new Uint8Array(67);
-  let i=0;
-  buf[i++]=2; // version answer
-  for(let k=0;k<4;k++)buf[i++]=ufrag.charCodeAt(k)||0;
-  for(let k=0;k<24;k++)buf[i++]=pwd.charCodeAt(k)||0;
-  for(let k=0;k<32;k++)buf[i++]=parseInt(fpHex.slice(k*2,k*2+2)||'00',16);
-  ip.split('.').forEach(o=>buf[i++]=parseInt(o));
-  buf[i++]=(port>>8)&0xff;buf[i++]=port&0xff;
-  return bytesToB62(buf.slice(0,i));
-}
-
-function unpackAnswer(code){
-  const buf=b62ToBytes(code,67);
-  let i=0;
-  const ver=buf[i++];
-  if(ver!==2)throw new Error('bad version');
-  const ufrag=String.fromCharCode(...buf.slice(i,i+4)).replace(/\0/g,'');i+=4;
-  const pwd=String.fromCharCode(...buf.slice(i,i+24)).replace(/\0/g,'');i+=24;
-  const fpBytes=buf.slice(i,i+32);i+=32;
-  const fp=[...fpBytes].map(b=>b.toString(16).padStart(2,'0')).join(':').toUpperCase();
-  const ip=buf.slice(i,i+4).join('.');i+=4;
-  const port=(buf[i]<<8)|buf[i+1];
-  const candidate=`0 1 UDP 2122252543 ${ip} ${port} typ host`;
-  return{ufrag,pwd,fp,ip,port,candidate};
-}
-
-// Reconstructeurs SDP à partir des champs extraits
 const OT=(u,p,fp,ca)=>`v=0\r\no=- 1234567890 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=ice-ufrag:${u}\r\na=ice-pwd:${p}\r\na=ice-options:trickle\r\na=fingerprint:sha-256 ${fp}\r\na=setup:actpass\r\na=mid:0\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n${ca}`;
 const AT=(u,p,fp,ca)=>`v=0\r\no=- 9876543210 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=ice-ufrag:${u}\r\na=ice-pwd:${p}\r\na=ice-options:trickle\r\na=fingerprint:sha-256 ${fp}\r\na=setup:active\r\na=mid:0\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n${ca}`;
-
-function fieldsToOfferSDP({ufrag,pwd,fp,candidate}){
-  return{type:'offer',sdp:OT(ufrag,pwd,fp,`a=candidate:${candidate}\r\n`)};
+function sdpPack(sdp){
+  const g=re=>(sdp.match(re)||[])[1]||'';
+  const u=g(/a=ice-ufrag:(\S+)/),p=g(/a=ice-pwd:(\S+)/),f=g(/a=fingerprint:sha-256 ([\dA-Fa-f:]+)/);
+  const c=[...sdp.matchAll(/a=candidate:(\S+ \S+ \S+ \S+ \S+ \S+ typ \S+[^\r\n]*)/g)].map(m=>m[1]).slice(0,4);
+  return btoa(JSON.stringify({u,p,f,c}));
 }
-function fieldsToAnswerSDP({ufrag,pwd,fp,candidate}){
-  return{type:'answer',sdp:AT(ufrag,pwd,fp,`a=candidate:${candidate}\r\n`)};
+function sdpUnpack(b64,type){
+  const {u,p,f,c}=JSON.parse(atob(b64));
+  const cl=c.map(x=>`a=candidate:${x}\r\n`).join('');
+  return {type,sdp:type==='offer'?OT(u,p,f,cl):AT(u,p,f,cl)};
 }
 
 // ═══════════════════════════════════════════════════
