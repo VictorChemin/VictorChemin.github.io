@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Échecs P2P</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -22,14 +23,9 @@
 }
 
 body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--sans);
-  font-size:15px;
-  line-height:1.6;
-  min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;
-  padding:2rem 1.25rem;
+  background:var(--bg);color:var(--text);font-family:var(--sans);
+  font-size:15px;line-height:1.6;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;padding:2rem 1.25rem;
 }
 body::before{
   content:'';position:fixed;inset:0;
@@ -40,77 +36,51 @@ body::before{
 }
 
 .app{position:relative;z-index:1;width:100%;max-width:980px}
-
-/* HEADER */
 header{text-align:center;margin-bottom:2rem}
-.eyebrow{
-  font-family:var(--sans);font-size:11px;font-weight:500;
-  color:var(--gold);letter-spacing:5px;text-transform:uppercase;
-  margin-bottom:.75rem;opacity:.8;
-}
-h1{
-  font-family:var(--serif);font-size:clamp(2.4rem,7vw,3.6rem);
-  font-weight:600;color:var(--cream);letter-spacing:-.5px;line-height:1;
-}
+.eyebrow{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--gold);letter-spacing:5px;text-transform:uppercase;margin-bottom:.75rem;opacity:.8;}
+h1{font-family:var(--serif);font-size:clamp(2.4rem,7vw,3.6rem);font-weight:600;color:var(--cream);letter-spacing:-.5px;line-height:1;}
 h1 em{font-style:italic;color:var(--gold)}
 
-/* SCREENS */
 .screen{display:none}.screen.on{display:block;animation:fi .35s ease}
 @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
-/* PANELS */
-.panel{
-  background:var(--bg2);border:1px solid var(--brd);
-  border-radius:var(--r);padding:1.5rem;margin-bottom:12px;
-}
-
-/* SECTION LABELS */
-.plabel{
-  font-family:var(--sans);font-size:10px;font-weight:600;
-  color:var(--gold);letter-spacing:4px;text-transform:uppercase;
-  margin-bottom:16px;display:flex;align-items:center;gap:10px;opacity:.9;
-}
+.panel{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:1.5rem;margin-bottom:12px;}
+.plabel{font-family:var(--sans);font-size:10px;font-weight:600;color:var(--gold);letter-spacing:4px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px;opacity:.9;}
 .plabel::after{content:'';flex:1;height:1px;background:var(--brd)}
 
-/* BUTTONS */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  font-family:var(--sans);font-size:14px;font-weight:500;
-  padding:11px 22px;border-radius:8px;border:none;cursor:pointer;
-  transition:all .18s;letter-spacing:.2px;
-}
-.btn-gold{
-  background:var(--gold);color:#0a0908;
-}
-.btn-gold:hover{
-  background:var(--gold2);transform:translateY(-1px);
-  box-shadow:0 6px 20px rgba(200,164,74,.28);
-}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-size:14px;font-weight:500;padding:11px 22px;border-radius:8px;border:none;cursor:pointer;transition:all .18s;letter-spacing:.2px;}
+.btn-gold{background:var(--gold);color:#0a0908;}
+.btn-gold:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,164,74,.28);}
 .btn-gold:disabled{opacity:.35;transform:none;cursor:not-allowed}
-
-.btn-out{
-  background:transparent;color:var(--text);
-  border:1px solid var(--brd2);
-}
+.btn-out{background:transparent;color:var(--text);border:1px solid var(--brd2);}
 .btn-out:hover{background:rgba(255,255,255,.04);border-color:var(--muted)}
 .btn-out:disabled{opacity:.35;cursor:not-allowed}
-
-.btn-red{
-  background:rgba(180,40,40,.18);color:#ffaaaa;
-  border:1px solid rgba(180,60,60,.4);
-}
+.btn-red{background:rgba(180,40,40,.18);color:#ffaaaa;border:1px solid rgba(180,60,60,.4);}
 .btn-red:hover{background:rgba(180,40,40,.3)}
+.btn-f{width:100%}.mt1{margin-top:10px}.mt2{margin-top:18px}.row{display:flex;gap:8px}
 
-.btn-f{width:100%}
-.mt1{margin-top:10px}.mt2{margin-top:18px}
-.row{display:flex;gap:8px}
-
-/* STATUS BAR */
-.sbar{
-  display:flex;align-items:center;gap:10px;
-  padding:12px 16px;border-radius:10px;
-  font-size:14px;margin-bottom:12px;border:1px solid;
+/* ROOM ID BOX */
+.room-box{
+  display:flex;align-items:center;gap:12px;
+  background:#060504;border:1px solid var(--brd);border-radius:8px;
+  padding:14px 16px;margin-bottom:12px;
 }
+.room-id{
+  font-family:'Courier New',monospace;font-size:2rem;font-weight:700;
+  color:var(--gold);letter-spacing:.25em;flex:1;text-align:center;
+}
+.room-id-small{font-size:1.1rem;letter-spacing:.2em;}
+
+.id-input{
+  font-family:'Courier New',monospace;font-size:1.6rem;font-weight:700;
+  letter-spacing:.2em;text-align:center;text-transform:uppercase;
+  background:#060504;border:1px solid var(--brd);border-radius:8px;
+  padding:12px 16px;color:var(--gold);width:100%;outline:none;
+}
+.id-input:focus{border-color:var(--gold-dim)}
+.id-input::placeholder{color:var(--muted);font-size:1rem;letter-spacing:.1em;}
+
+.sbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;font-size:14px;margin-bottom:12px;border:1px solid;}
 .sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .sw{background:rgba(255,255,255,.02);border-color:var(--brd);color:var(--muted)}
 .sw .sdot{background:var(--muted);animation:pu 2s infinite}
@@ -120,24 +90,14 @@ h1 em{font-style:italic;color:var(--gold)}
 .sc .sdot{background:#5fdc90}
 .se{background:rgba(220,70,70,.07);border-color:rgba(220,70,70,.3);color:#e07070}
 .se .sdot{background:#e07070}
+.sr{background:rgba(200,164,74,.04);border-color:rgba(200,164,74,.2);color:var(--gold)}
+.sr .sdot{background:var(--gold);animation:pu .6s infinite}
 @keyframes pu{0%,100%{opacity:1}50%{opacity:.25}}
 
-/* CODE BOXES */
-.codebox{
-  font-family:'Courier New',monospace;font-size:12px;
-  background:#060504;border:1px solid var(--brd);border-radius:8px;
-  padding:12px 14px;color:var(--gold);width:100%;resize:none;
-  height:80px;outline:none;word-break:break-all;line-height:1.6;
-}
-.codebox:focus{border-color:var(--gold-dim)}
 .hint{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
 
-/* OPTION CARDS */
 .opt-row{display:flex;gap:8px}
-.opt-card{
-  flex:1;border:1px solid var(--brd);border-radius:10px;
-  padding:1rem .75rem;text-align:center;cursor:pointer;transition:all .2s;
-}
+.opt-card{flex:1;border:1px solid var(--brd);border-radius:10px;padding:1rem .75rem;text-align:center;cursor:pointer;transition:all .2s;}
 .opt-card:hover{background:rgba(255,255,255,.04);border-color:var(--brd2)}
 .opt-card.sel{border-color:var(--gold);background:rgba(200,164,74,.07)}
 .opt-icon{font-size:1.8rem;margin-bottom:6px;line-height:1}
@@ -146,97 +106,64 @@ h1 em{font-style:italic;color:var(--gold)}
 .color-card.w.sel{border-color:#c8b08a;background:rgba(200,176,138,.07)}
 .color-card.b.sel{border-color:#7a5235;background:rgba(122,82,53,.1)}
 
-/* TIMER GRID */
 .timer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
-.tc{
-  border:1px solid var(--brd);border-radius:8px;padding:.7rem .5rem;
-  text-align:center;cursor:pointer;transition:all .2s;
-  font-size:12px;font-weight:500;color:var(--muted);
-}
+.tc{border:1px solid var(--brd);border-radius:8px;padding:.7rem .5rem;text-align:center;cursor:pointer;transition:all .2s;font-size:12px;font-weight:500;color:var(--muted);}
 .tc:hover{border-color:var(--brd2);background:rgba(255,255,255,.03)}
 .tc.sel{border-color:var(--gold);background:rgba(200,164,74,.07);color:var(--gold)}
 .tc-icon{font-size:1.1rem;margin-bottom:4px}
 
-/* CUSTOM TIMER */
 .custom-row{display:none;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
 .custom-row.on{display:flex}
-.tinput{
-  font-family:var(--sans);background:#060504;border:1px solid var(--brd);
-  border-radius:8px;padding:8px 12px;color:var(--text);font-size:15px;
-  width:70px;text-align:center;outline:none;
-}
+.tinput{font-family:var(--sans);background:#060504;border:1px solid var(--brd);border-radius:8px;padding:8px 12px;color:var(--text);font-size:15px;width:70px;text-align:center;outline:none;}
 .tinput:focus{border-color:var(--gold-dim)}
 .tlbl{font-size:14px;color:var(--muted)}
 
-/* STEPS */
 .step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
-.snum{
-  width:22px;height:22px;border-radius:50%;background:var(--gold);
-  color:#0a0908;font-size:11px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;
-}
+.snum{width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0a0908;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
 .stxt{font-size:14px;color:var(--muted);line-height:1.6}
 .stxt strong{color:var(--text);font-weight:500}
 
-/* ─── GAME LAYOUT ─── */
+/* reconnect banner */
+.reconnect-banner{
+  display:none;background:rgba(200,164,74,.08);border:1px solid rgba(200,164,74,.3);
+  border-radius:10px;padding:12px 16px;margin-bottom:10px;
+  font-size:13px;color:var(--gold);text-align:center;
+}
+.reconnect-banner.on{display:block}
+
+/* ─── GAME ─── */
 .game-wrap{display:flex;gap:12px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
 .side-col{width:210px;display:flex;flex-direction:column;gap:10px;min-width:150px}
 
-/* CLOCKS */
-.clock-box{
-  background:var(--bg3);border:1px solid var(--brd);
-  border-radius:10px;padding:14px 16px;text-align:center;
-  transition:border-color .2s,background .2s;
-}
+.clock-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:14px 16px;text-align:center;transition:border-color .2s,background .2s;}
 .clk-name{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
-.clk-time{
-  font-family:var(--serif);font-size:2.4rem;font-weight:600;
-  color:var(--cream);letter-spacing:2px;line-height:1;
-}
+.clk-time{font-family:var(--serif);font-size:2.4rem;font-weight:600;color:var(--cream);letter-spacing:2px;line-height:1;}
 .clock-box.active{border-color:var(--gold);background:rgba(200,164,74,.04)}
 .clock-box.active .clk-time{color:var(--gold)}
 .clock-box.low .clk-time{color:#e07070;animation:blink .8s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 
-/* CAPTURES */
 .cap-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:10px 14px}
 .cap-lbl{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
 .cap-pcs{font-size:1.1rem;min-height:24px;word-break:break-all;line-height:1.5}
 .cap-adv{font-size:13px;font-weight:500;color:var(--gold);margin-top:2px}
 
-/* MOVES HISTORY */
 .moves-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;flex:1}
 .moves-inner{max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--brd) transparent}
-.mv-row{
-  display:grid;grid-template-columns:28px 1fr 1fr;gap:4px;
-  font-size:13px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);
-}
+.mv-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:4px;font-size:13px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);}
 .mv-row:last-child{border:none}
 .mv-n{color:var(--muted)}
 .mv-w,.mv-b{padding:2px 4px;border-radius:4px}
 .mv-w.cur,.mv-b.cur{background:rgba(200,164,74,.12);color:var(--gold)}
 
-/* ─── BOARD ─── */
 :root{--bs2:min(480px, calc(100vw - 52px))}
 .board-col{display:flex;flex-direction:column;align-items:center;gap:8px}
 .b-wrap{display:flex;gap:4px}
 .ranks{display:flex;flex-direction:column;justify-content:space-around;height:var(--bs2);padding:2px 0}
 .files{display:flex;justify-content:space-around;width:var(--bs2);padding:0 2px}
-.coord{
-  font-family:var(--sans);font-size:10px;font-weight:500;
-  color:var(--muted);width:16px;text-align:center;
-}
-.board{
-  display:grid;grid-template-columns:repeat(8,1fr);
-  width:var(--bs2);height:var(--bs2);
-  border-radius:4px;overflow:hidden;
-  box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 1px var(--brd2);
-}
-.sq{
-  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-  font-size:calc(var(--bs2)/9.5);cursor:pointer;position:relative;
-  transition:background .08s;user-select:none;
-}
+.coord{font-family:var(--sans);font-size:10px;font-weight:500;color:var(--muted);width:16px;text-align:center;}
+.board{display:grid;grid-template-columns:repeat(8,1fr);width:var(--bs2);height:var(--bs2);border-radius:4px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 1px var(--brd2);}
+.sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:calc(var(--bs2)/9.5);cursor:pointer;position:relative;transition:background .08s;user-select:none;}
 .sq.lt{background:var(--ws)}.sq.dk{background:var(--bs)}
 .sq.sel.lt{background:var(--ws-sel)}.sq.sel.dk{background:var(--bs-sel)}
 .sq.mov.lt{background:var(--ws-mov)}.sq.mov.dk{background:var(--bs-mov)}
@@ -244,49 +171,25 @@ h1 em{font-style:italic;color:var(--gold)}
 .sq.chk{background:var(--check) !important}
 .sq.mov::after{content:'';position:absolute;width:28%;height:28%;border-radius:50%;background:rgba(0,0,0,.16);pointer-events:none}
 .sq.mov.occ::after{width:100%;height:100%;border-radius:0;background:transparent;box-shadow:inset 0 0 0 3px rgba(0,0,0,.2)}
-.piece{
-  width:88%;height:88%;display:flex;align-items:center;justify-content:center;
-  border-radius:50%;font-size:inherit;line-height:1;pointer-events:none;
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));transition:transform .1s;
-}
+.piece{width:88%;height:88%;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:inherit;line-height:1;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));transition:transform .1s;}
 .sq:hover:not(.no-hover) .piece{transform:scale(1.1)}
 
-/* CONTROL ROW */
 .ctrl-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 
-/* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:none;align-items:center;justify-content:center}
 .overlay.on{display:flex}
-.modal{
-  background:var(--bg2);border:1px solid var(--brd2);border-radius:16px;
-  padding:2rem;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.7);
-  max-width:340px;width:90%;
-}
+.modal{background:var(--bg2);border:1px solid var(--brd2);border-radius:16px;padding:2rem;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.7);max-width:340px;width:90%;}
 .modal h3{font-family:var(--serif);font-size:1.6rem;font-weight:600;color:var(--cream);margin-bottom:1.25rem}
 .promo-grid{display:flex;gap:12px;justify-content:center}
-.pp{
-  width:68px;height:68px;border:1px solid var(--brd);border-radius:10px;
-  display:flex;align-items:center;justify-content:center;font-size:2.4rem;
-  cursor:pointer;background:var(--bg3);transition:all .18s;
-}
+.pp{width:68px;height:68px;border:1px solid var(--brd);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2.4rem;cursor:pointer;background:var(--bg3);transition:all .18s;}
 .pp:hover{border-color:var(--gold);transform:scale(1.1)}
 
-/* RESULT & OFFER */
-.result{
-  display:none;background:var(--bg3);border:1px solid var(--brd2);
-  border-radius:12px;padding:1.5rem;text-align:center;
-  margin-bottom:12px;animation:fi .4s ease;
-}
+.result{display:none;background:var(--bg3);border:1px solid var(--brd2);border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:12px;animation:fi .4s ease;}
 .result.on{display:block}
 .result-t{font-family:var(--serif);font-size:2rem;font-weight:600;color:var(--cream);margin-bottom:4px}
 .result-s{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
 
-.offer-bar{
-  display:none;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.25);
-  border-radius:10px;padding:12px 16px;align-items:center;
-  justify-content:space-between;gap:10px;margin-bottom:10px;
-  font-size:14px;color:#5fdc90;
-}
+.offer-bar{display:none;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:12px 16px;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:14px;color:#5fdc90;}
 .offer-bar.on{display:flex}
 
 @media(max-width:700px){
@@ -299,7 +202,7 @@ h1 em{font-style:italic;color:var(--gold)}
 <body>
 <div class="app">
 <header>
-  <div class="eyebrow">P2P · Sans serveur · 100% gratuit</div>
+  <div class="eyebrow">P2P · Code de salle · Reconnexion auto</div>
   <h1>Échecs <em>P2P</em></h1>
 </header>
 
@@ -312,6 +215,7 @@ h1 em{font-style:italic;color:var(--gold)}
       <div class="opt-card" id="rc-guest" onclick="setRole('guest')"><div class="opt-icon">♞</div><div class="opt-main">Invité</div><div class="opt-sub">Rejoint la partie</div></div>
     </div>
   </div>
+
   <div id="host-opts">
     <div class="panel">
       <div class="plabel">Votre couleur</div>
@@ -323,7 +227,7 @@ h1 em{font-style:italic;color:var(--gold)}
     </div>
     <div class="panel">
       <div class="plabel">Contrôle du temps</div>
-      <div class="timer-grid" id="timer-presets">
+      <div class="timer-grid">
         <div class="tc sel" id="tp-none" onclick="setTimer('none')"><div class="tc-icon">∞</div>Sans limite</div>
         <div class="tc" id="tp-1+0" onclick="setTimer('1+0')"><div class="tc-icon">⚡</div>1+0 Bullet</div>
         <div class="tc" id="tp-2+1" onclick="setTimer('2+1')"><div class="tc-icon">🔥</div>2+1 Bullet</div>
@@ -341,42 +245,41 @@ h1 em{font-style:italic;color:var(--gold)}
       </div>
     </div>
   </div>
+
+  <!-- HOST PANEL -->
   <div id="f-host">
     <div class="panel">
-      <div class="plabel">Étape 1 — Votre code d'invitation</div>
-      <div class="step"><div class="snum">1</div><div class="stxt">Générez votre code et envoyez-le à votre adversaire (SMS, mail…)</div></div>
-      <button class="btn btn-gold btn-f" id="btn-gen" onclick="hostCreate()">Générer mon code ♟</button>
+      <div class="plabel">Code de votre salle</div>
+      <div class="step"><div class="snum">1</div><div class="stxt">Cliquez pour générer votre <strong>code de salle</strong> (6 lettres) et envoyez-le à votre adversaire. C'est tout — plus besoin de codes de réponse.</div></div>
+      <button class="btn btn-gold btn-f" id="btn-gen" onclick="hostCreate()">Générer mon code de salle ♟</button>
       <div id="h-offer" style="display:none">
-        <textarea class="codebox mt2" id="out-offer" readonly></textarea>
-        <div class="hint">↑ Copiez ce code et envoyez-le à votre adversaire</div>
-        <button class="btn btn-out btn-f mt1" onclick="cp('out-offer',this)">Copier le code</button>
-        <div class="mt2">
-          <div class="plabel">Étape 2 — Réponse de votre adversaire</div>
-          <div class="step"><div class="snum">2</div><div class="stxt">Votre adversaire vous renvoie une <strong>réponse</strong>. Collez-la ici :</div></div>
-          <textarea class="codebox" id="in-answer" placeholder="Collez la réponse ici…"></textarea>
-          <button class="btn btn-gold btn-f mt1" onclick="hostAccept()">Lancer la partie →</button>
+        <div class="room-box mt2">
+          <div class="room-id" id="out-room-id">——</div>
+          <button class="btn btn-out" style="padding:9px 14px;font-size:13px" onclick="cpRoom()">Copier</button>
         </div>
+        <div class="hint">↑ Envoyez ce code à votre adversaire (SMS, mail…)<br>La connexion s'établit automatiquement dès qu'il le saisit.</div>
       </div>
     </div>
   </div>
+
+  <!-- GUEST PANEL -->
   <div id="f-guest" style="display:none">
     <div class="panel">
-      <div class="plabel">Étape 1 — Collez le code reçu</div>
-      <div class="step"><div class="snum">1</div><div class="stxt">Collez le <strong>code d'invitation</strong> de votre adversaire :</div></div>
-      <textarea class="codebox" id="in-offer" placeholder="Collez le code ici…"></textarea>
-      <button class="btn btn-gold btn-f mt1" onclick="guestAnswer()">Générer ma réponse ♟</button>
-      <div id="g-answer" style="display:none">
-        <textarea class="codebox mt2" id="out-answer" readonly></textarea>
-        <div class="hint">↑ Renvoyez ce code à votre adversaire</div>
-        <button class="btn btn-out btn-f mt1" onclick="cp('out-answer',this)">Copier la réponse</button>
-      </div>
+      <div class="plabel">Rejoindre une partie</div>
+      <div class="step"><div class="snum">1</div><div class="stxt">Saisissez le <strong>code de salle</strong> envoyé par l'hôte :</div></div>
+      <input class="id-input" id="in-room-id" maxlength="6" placeholder="ex : ABC123" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      <button class="btn btn-gold btn-f mt1" id="btn-join" onclick="guestJoin()">Rejoindre →</button>
     </div>
   </div>
-  <div class="sbar sw" id="sbar"><div class="sdot"></div><span id="sbar-txt">En attente de connexion…</span></div>
+
+  <div class="sbar sw" id="sbar"><div class="sdot"></div><span id="sbar-txt">En attente…</span></div>
 </div>
 
 <!-- ══ GAME ══ -->
 <div class="screen" id="s-game">
+  <div id="reconnect-banner" class="reconnect-banner">
+    ↻ Connexion perdue — reconnexion automatique en cours…
+  </div>
   <div id="offer-bar" class="offer-bar">
     <span>Nulle proposée par l'adversaire</span>
     <div style="display:flex;gap:6px">
@@ -460,7 +363,6 @@ h1 em{font-style:italic;color:var(--gold)}
 <div class="overlay" id="promo-overlay">
   <div class="modal"><h3>Promotion</h3><div class="promo-grid" id="promo-grid"></div></div>
 </div>
-
 <div class="overlay" id="resign-overlay">
   <div class="modal" style="max-width:320px">
     <div style="font-size:2rem;margin-bottom:.5rem">⚑</div>
@@ -475,81 +377,248 @@ h1 em{font-style:italic;color:var(--gold)}
 
 <script>
 // ═══════════════════════════════════════════════════
-// SDP PACK / UNPACK
+// NETWORK — PeerJS avec reconnexion automatique
 // ═══════════════════════════════════════════════════
-const OT=(u,p,fp,ca)=>`v=0\r\no=- 1234567890 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=ice-ufrag:${u}\r\na=ice-pwd:${p}\r\na=ice-options:trickle\r\na=fingerprint:sha-256 ${fp}\r\na=setup:actpass\r\na=mid:0\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n${ca}`;
-const AT=(u,p,fp,ca)=>`v=0\r\no=- 9876543210 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\na=ice-ufrag:${u}\r\na=ice-pwd:${p}\r\na=ice-options:trickle\r\na=fingerprint:sha-256 ${fp}\r\na=setup:active\r\na=mid:0\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n${ca}`;
-function sdpPack(sdp){
-  const g=re=>(sdp.match(re)||[])[1]||'';
-  const u=g(/a=ice-ufrag:(\S+)/),p=g(/a=ice-pwd:(\S+)/),f=g(/a=fingerprint:sha-256 ([\dA-Fa-f:]+)/);
-  const c=[...sdp.matchAll(/a=candidate:(\S+ \S+ \S+ \S+ \S+ \S+ typ \S+[^\r\n]*)/g)].map(m=>m[1]).slice(0,4);
-  return btoa(JSON.stringify({u,p,f,c}));
-}
-function sdpUnpack(b64,type){
-  const {u,p,f,c}=JSON.parse(atob(b64));
-  const cl=c.map(x=>`a=candidate:${x}\r\n`).join('');
-  return {type,sdp:type==='offer'?OT(u,p,f,cl):AT(u,p,f,cl)};
+// Architecture :
+//   L'hôte crée un Peer avec un ID = roomId (6 chars alphanumériques)
+//   L'invité se connecte à cet ID
+//   Si la connexion coupe, l'invité retente automatiquement toutes les 3s
+//   L'hôte garde son Peer ouvert en permanence → pas besoin de rééchanger de codes
+
+let peer = null;       // Peer PeerJS local
+let conn = null;       // DataConnection active
+let myRole = 'host';
+let myColor = 'white';
+let timerSetting = 'none';
+let myActualColor = 'white';
+let roomId = null;     // ID de la salle (= peer ID de l'hôte)
+
+let reconnectTimer = null;
+let heartbeatTimer = null;
+let lastHeartbeat = 0;
+const HEARTBEAT_INTERVAL = 4000;
+const HEARTBEAT_TIMEOUT  = 12000;
+const RECONNECT_DELAY    = 3000;
+
+// Génère un ID de salle court et lisible
+function genRoomId() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans O,0,I,1 ambigus
+  let id = '';
+  for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
 }
 
-// ═══════════════════════════════════════════════════
-// WEBRTC
-// ═══════════════════════════════════════════════════
-let pc,dc,myRole='host',myColor='white',timerSetting='none',myActualColor='white';
+// ─── HÔTE ───
+async function hostCreate() {
+  const btn = document.getElementById('btn-gen');
+  btn.disabled = true; btn.textContent = 'Génération…';
 
-function newPeer(){
-  if(pc)pc.close();
-  pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
-  pc.onconnectionstatechange=()=>{
-    const s=pc.connectionState;
-    if(s==='connected'){setSbar('c','Connecté !');setTimeout(startGame,400);}
-    else if(s==='disconnected'||s==='failed')setSbar('e','Connexion perdue');
-  };
+  const color = myColor === 'random' ? (Math.random() < .5 ? 'white' : 'black') : myColor;
+  myActualColor = color;
+  const timer = timerSetting === 'custom'
+    ? `c:${document.getElementById('c-min').value||15}:${document.getElementById('c-inc').value||0}`
+    : timerSetting;
+
+  roomId = genRoomId();
+
+  // On détruit un éventuel peer précédent
+  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+
+  // Serveur de signalisation PeerJS Cloud (100% gratuit, pas de compte nécessaire)
+  peer = new Peer('chess-' + roomId, {
+    host: '0.peerjs.com',
+    port: 443,
+    path: '/',
+    secure: true,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        // TURN public de metered.ca — gratuit, pas d'inscription
+        { urls: 'turn:a.relay.metered.ca:80',    username: 'open', credential: 'open' },
+        { urls: 'turn:a.relay.metered.ca:443',   username: 'open', credential: 'open' },
+        { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username: 'open', credential: 'open' },
+      ]
+    }
+  });
+
+  peer.on('open', (id) => {
+    document.getElementById('out-room-id').textContent = roomId;
+    document.getElementById('h-offer').style.display = 'block';
+    btn.textContent = 'Code généré ✓';
+    setSbar('w', 'En attente de l\'invité… (' + roomId + ')');
+  });
+
+  peer.on('connection', (c) => {
+    // L'hôte accepte toujours la connexion entrante avec le même roomId
+    setupConn(c, { color, timer });
+  });
+
+  peer.on('error', (err) => {
+    setSbar('e', 'Erreur : ' + err.type);
+    btn.disabled = false; btn.textContent = 'Générer mon code de salle ♟';
+  });
 }
-async function gatherDone(){
-  if(pc.iceGatheringState==='complete')return;
-  await new Promise(r=>{pc.onicegatheringstatechange=()=>{if(pc.iceGatheringState==='complete')r();};setTimeout(r,5000);});
+
+// ─── INVITÉ ───
+function guestJoin() {
+  const input = document.getElementById('in-room-id').value.trim().toUpperCase();
+  if (input.length < 4) { setSbar('e', 'Code trop court'); return; }
+
+  roomId = input;
+  document.getElementById('btn-join').disabled = true;
+  clearReconnect();
+  doGuestConnect();
 }
-async function hostCreate(){
-  const btn=document.getElementById('btn-gen');
-  btn.disabled=true;btn.textContent='Génération…';
-  newPeer();dc=pc.createDataChannel('chess');setupDC();
-  await pc.setLocalDescription(await pc.createOffer());
-  await gatherDone();
-  const color=myColor==='random'?(Math.random()<.5?'white':'black'):myColor;
-  myActualColor=color;
-  const timer=timerSetting==='custom'?`c:${document.getElementById('c-min').value||15}:${document.getElementById('c-inc').value||0}`:timerSetting;
-  document.getElementById('out-offer').value=btoa(JSON.stringify({s:sdpPack(pc.localDescription.sdp),c:color,t:timer}));
-  document.getElementById('h-offer').style.display='block';
-  setSbar('w','Attendez la réponse de votre adversaire…');
+
+function doGuestConnect() {
+  setSbar('p', 'Connexion à ' + roomId + '…');
+
+  if (peer && !peer.destroyed) {
+    connectToPeer();
+    return;
+  }
+
+  if (peer) { try { peer.destroy(); } catch(e){} }
+
+  peer = new Peer({
+    host: '0.peerjs.com',
+    port: 443,
+    path: '/',
+    secure: true,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'turn:a.relay.metered.ca:80',    username: 'open', credential: 'open' },
+        { urls: 'turn:a.relay.metered.ca:443',   username: 'open', credential: 'open' },
+        { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username: 'open', credential: 'open' },
+      ]
+    }
+  });
+
+  peer.on('open', connectToPeer);
+  peer.on('error', (err) => {
+    setSbar('e', 'Erreur réseau — nouvel essai…');
+    scheduleReconnect();
+  });
 }
-async function hostAccept(){
-  try{
-    const sd=sdpUnpack(document.getElementById('in-answer').value.trim(),'answer');
-    await pc.setRemoteDescription(new RTCSessionDescription(sd));
-    setSbar('w','Connexion en cours…');
-  }catch(e){setSbar('e','Code invalide');}
+
+function connectToPeer() {
+  if (conn) { try { conn.close(); } catch(e){} conn = null; }
+  const c = peer.connect('chess-' + roomId, { reliable: true });
+  setupConn(c, null);
 }
-async function guestAnswer(){
-  try{
-    const payload=JSON.parse(atob(document.getElementById('in-offer').value.trim()));
-    myActualColor=payload.c==='white'?'black':'white';
-    timerSetting=payload.t;
-    const sd=sdpUnpack(payload.s,'offer');
-    newPeer();pc.ondatachannel=e=>{dc=e.channel;setupDC();};
-    await pc.setRemoteDescription(new RTCSessionDescription(sd));
-    await pc.setLocalDescription(await pc.createAnswer());
-    await gatherDone();
-    document.getElementById('out-answer').value=sdpPack(pc.localDescription.sdp);
-    document.getElementById('g-answer').style.display='block';
-    setSbar('w','Renvoyez ce code à votre adversaire…');
-  }catch(e){setSbar('e','Code invalide');}
+
+// ─── CONNEXION COMMUNE ───
+function setupConn(c, hostMeta) {
+  conn = c;
+
+  c.on('open', () => {
+    clearReconnect();
+    lastHeartbeat = Date.now();
+
+    if (myRole === 'host' && hostMeta) {
+      // L'hôte envoie la config de la partie dès que l'invité se connecte
+      c.send(JSON.stringify({ t: 'init', color: hostMeta.color, timer: hostMeta.timer }));
+      // Si une partie est en cours, envoyer l'état complet pour resync
+      if (gameActive) {
+        c.send(JSON.stringify({
+          t: 'resync',
+          board: G.board,
+          turn: G.turn,
+          castling: G.castling,
+          ep: G.ep,
+          capW, capB,
+          moveHist,
+          halfClock, fullNum,
+          lastMove,
+          clocks,
+          turnStart,
+          timerSetting
+        }));
+        setSbar('c', 'Adversaire reconnecté !');
+        document.getElementById('reconnect-banner').classList.remove('on');
+      } else {
+        setSbar('c', 'Connecté !');
+        setTimeout(startGame, 400);
+      }
+    }
+
+    startHeartbeat();
+  });
+
+  c.on('data', (raw) => {
+    lastHeartbeat = Date.now();
+    let m;
+    try { m = JSON.parse(raw); } catch(e) { return; }
+    if (m.t === 'hb') return; // heartbeat, ne rien faire
+    handleMsg(m);
+  });
+
+  c.on('close', onConnLost);
+  c.on('error', onConnLost);
 }
-function setupDC(){
-  dc.onopen=()=>{};
-  dc.onmessage=e=>handleMsg(JSON.parse(e.data));
-  dc.onclose=()=>{if(gameActive)endGame('disconnect');};
+
+function onConnLost() {
+  stopHeartbeat();
+  conn = null;
+  if (gameActive) {
+    setSbar('r', 'Connexion perdue — reconnexion auto…');
+    document.getElementById('reconnect-banner').classList.add('on');
+    if (myRole === 'guest') scheduleReconnect();
+  } else {
+    setSbar('e', 'Connexion perdue');
+    if (myRole === 'guest' && roomId) scheduleReconnect();
+  }
 }
-function send(o){if(dc?.readyState==='open')dc.send(JSON.stringify(o));}
+
+function scheduleReconnect() {
+  clearReconnect();
+  reconnectTimer = setTimeout(() => {
+    if (myRole === 'guest' && roomId) doGuestConnect();
+  }, RECONNECT_DELAY);
+}
+
+function clearReconnect() {
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+}
+
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatTimer = setInterval(() => {
+    // Envoyer un heartbeat
+    send({ t: 'hb' });
+    // Vérifier si l'autre côté est toujours vivant
+    if (Date.now() - lastHeartbeat > HEARTBEAT_TIMEOUT) {
+      onConnLost();
+    }
+  }, HEARTBEAT_INTERVAL);
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+}
+
+function send(o) {
+  if (conn && conn.open) {
+    try { conn.send(JSON.stringify(o)); } catch(e) {}
+  }
+}
+
+function cpRoom() {
+  const txt = document.getElementById('out-room-id').textContent;
+  const btn = event.target;
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(txt).then(() => {
+      const o = btn.textContent; btn.textContent = '✓ Copié !';
+      setTimeout(() => btn.textContent = o, 1400);
+    });
+  } else {
+    const o = btn.textContent; btn.textContent = '✓ ' + txt;
+    setTimeout(() => btn.textContent = o, 2000);
+  }
+}
 
 // ═══════════════════════════════════════════════════
 // CHESS ENGINE
@@ -559,7 +628,7 @@ let selected=null,legalMoves=[],lastMove=null,gameActive=false;
 let capW=[],capB=[],moveHist=[],halfClock=0,fullNum=1;
 let pendingPromo=null,boardFlipped=false;
 let clocks={w:0,b:0},increment=0,clockIv=null,clockOn=false;
-let turnStart=null; // Date.now() du début du tour actif
+let turnStart=null;
 
 const UNI={K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
 const isW=p=>p&&p===p.toUpperCase();
@@ -644,7 +713,6 @@ function insuffMat(b){
   const ps=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c])ps.push(b[r][c].toLowerCase());
   if(ps.length===2)return true;
   if(ps.length===3&&(ps.filter(p=>p==='b').length===1||ps.filter(p=>p==='n').length===1))return true;
-  // KB vs KB same color
   if(ps.length===4&&ps.filter(p=>p==='b').length===2&&ps.filter(p=>p==='k').length===2){
     const bishops=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]?.toLowerCase()==='b')bishops.push((r+c)%2);
     if(bishops[0]===bishops[1])return true;
@@ -661,9 +729,6 @@ function toSAN(mv,b,cast,ep){
   let s='';
   if(pt!=='p'){
     s+=p.toUpperCase();
-    // disambiguation
-    const same=allLegal(pc2(p),b,cast,ep).filter(m=>b[m.fr][m.fc]===p&&(m.tr!==mv.tr||m.tc!==mv.tc)&&(m.tr===mv.tr&&m.tc===mv.tc));
-    // simpler: check if any other same piece can go to same square
     const ambig=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if((r!==mv.fr||c!==mv.fc)&&b[r][c]===p){const ml=legalMovesFor(r,c,b,cast,ep);if(ml.some(m=>m.tr===mv.tr&&m.tc===mv.tc))ambig.push([r,c]);}
     if(ambig.length){const sameFile=ambig.some(([,c])=>c===mv.fc);s+=sameFile?String.fromCharCode(97+mv.fr):'';if(!sameFile)s+=String.fromCharCode(97+mv.fc);}
   }else if(cap)s+=String.fromCharCode(97+mv.fc);
@@ -683,15 +748,39 @@ function startGame(){
   initBoard();initClocks();buildBoard();renderBoard();renderSide();renderMoves();
   updateClkNames();
   startClockDisplay();
+  setSbar('c', 'Connecté — ' + (myActualColor === 'white' ? 'Vous jouez Blancs' : 'Vous jouez Noirs'));
 }
 
 function handleMsg(m){
+  if(m.t==='init'){
+    // Reçu par l'invité : config de la partie
+    myActualColor = m.color === 'white' ? 'black' : 'white';
+    timerSetting = m.timer;
+    setSbar('c','Connecté !');
+    setTimeout(startGame,400);
+  }
+  if(m.t==='resync'){
+    // Resync après reconnexion (invité seulement)
+    G.board=m.board;G.turn=m.turn;G.castling=m.castling;G.ep=m.ep;
+    capW=m.capW;capB=m.capB;moveHist=m.moveHist;
+    halfClock=m.halfClock;fullNum=m.fullNum;lastMove=m.lastMove;
+    clocks=m.clocks;turnStart=m.turnStart;timerSetting=m.timerSetting;
+    document.getElementById('reconnect-banner').classList.remove('on');
+    setSbar('c','Reconnecté — partie en cours');
+    if(!document.getElementById('s-game').classList.contains('on')){
+      document.getElementById('s-setup').classList.remove('on');
+      document.getElementById('s-game').classList.add('on');
+      gameActive=true;boardFlipped=myActualColor==='black';
+      buildBoard();updateClkNames();startClockDisplay();
+    }
+    renderBoard();renderSide();renderMoves();
+  }
   if(m.t==='mv')recvMove(m);
   if(m.t==='draw')showDrawOffer();
-  if(m.t==='draw-ok'){endGame('draw-agreed');}
+  if(m.t==='draw-ok')endGame('draw-agreed');
   if(m.t==='draw-no'){/* nothing */}
   if(m.t==='resign')endGame('opp-resign');
-  if(m.t==='flag')endGame('flag-opp'); // l'adversaire a flagué
+  if(m.t==='flag')endGame('flag-opp');
   if(m.t==='rematch-offer')showRematchIncoming(m);
   if(m.t==='rematch-ok')doRematch(m.c,m.timer);
   if(m.t==='rematch-no')cancelRematch(true);
@@ -724,15 +813,12 @@ function selectSq(r,c){
 
 function doMove(mv,isMine,promo,ts){
   promo=promo||mv.promo||'q';
-  // ts = horodatage du coup. Si c'est mon coup, je le génère maintenant.
-  // Si c'est le coup de l'adversaire, il m'a envoyé le sien.
   if(ts===undefined)ts=isMine?Date.now():mv.ts;
   const p=G.board[mv.fr][mv.fc];
   const cap=G.board[mv.tr][mv.tc]||(mv.sp==='ep'?G.board[mv.fr][mv.tc]:null);
   const san=toSAN(mv,G.board,G.castling,G.ep);
   G.board=applyMv(mv,G.board,promo);
 
-  // update castling
   if(p==='K'){G.castling.wK=0;G.castling.wQ=0;}
   if(p==='k'){G.castling.bK=0;G.castling.bQ=0;}
   if(p==='R'){if(mv.fc===7)G.castling.wK=0;if(mv.fc===0)G.castling.wQ=0;}
@@ -754,7 +840,6 @@ function doMove(mv,isMine,promo,ts){
   lastMove={fr:mv.fr,fc:mv.fc,tr:mv.tr,tc:mv.tc};
   selected=null;legalMoves=[];
 
-  // Mise à jour horloge avec le timestamp partagé
   applyClockOnMove(G.turn, ts);
   G.turn=nextTurn;
 
@@ -789,14 +874,8 @@ function showPromo(color){
 }
 
 // ═══════════════════════════════════════════════════
-// CLOCKS — basées sur Date.now(), impossibles à mettre en pause
+// CLOCKS
 // ═══════════════════════════════════════════════════
-// Architecture :
-//   clocks.w / clocks.b = millisecondes RESTANTES au moment du dernier coup
-//   turnStart            = Date.now() au moment où le tour en cours a commencé
-//   Le temps réel du joueur actif = clocks[G.turn] - (Date.now() - turnStart)
-//   setInterval ne sert qu'à rafraîchir l'affichage, pas à compter.
-
 function parseTimer(s){
   if(s==='none'||!s)return{ms:0,inc:0};
   if(s.startsWith('c:')){const[,m,i]=s.split(':');return{ms:parseInt(m)*60000,inc:parseInt(i)*1000};}
@@ -806,25 +885,17 @@ function parseTimer(s){
 function initClocks(){
   const{ms,inc}=parseTimer(timerSetting);
   clocks={w:ms,b:ms};increment=inc;
-  turnStart=null; // pas encore démarré
+  turnStart=null;
   renderClkTimes();
 }
 
-// Appelé à chaque coup. ts = timestamp Date.now() du moment où le coup a été joué
-// (passé dans le message réseau pour que les deux joueurs aient la même référence)
 function applyClockOnMove(movedColor, ts){
   if(timerSetting==='none')return;
-
   if(turnStart!==null){
-    // Déduire le temps écoulé depuis le début du tour du joueur qui vient de jouer
     const elapsed=ts-turnStart;
     clocks[movedColor]=Math.max(0, clocks[movedColor]-elapsed);
   }
-
-  // Bonus d'incrément après le coup
   clocks[movedColor]+=increment;
-
-  // Le prochain tour commence maintenant
   turnStart=ts;
 }
 
@@ -834,9 +905,6 @@ function startClockDisplay(){
   clockIv=setInterval(()=>{
     if(!gameActive||timerSetting==='none')return;
     renderClkTimes();
-
-    // Vérifier le flag (temps écoulé) seulement pour le joueur local
-    // Le joueur distant vérifiera de son côté — le premier qui détecte endGame l'envoie via resign implicite
     const myC=myActualColor==='white'?'w':'b';
     if(G.turn===myC&&turnStart!==null){
       const live=clocks[myC]-(Date.now()-turnStart);
@@ -844,7 +912,7 @@ function startClockDisplay(){
         clocks[myC]=0;renderClkTimes();
         clearInterval(clockIv);clockIv=null;
         endGame('flag-self');
-        send({t:'flag'}); // prévenir l'adversaire
+        send({t:'flag'});
       }
     }
   },100);
@@ -987,8 +1055,7 @@ function endGame(reason){
   document.getElementById('result').classList.add('on');
   document.getElementById('btn-draw').disabled=true;
   document.getElementById('btn-resign').disabled=true;
-  // Afficher le bouton revanche seulement si connecté
-  if(dc&&dc.readyState==='open'){
+  if(conn&&conn.open){
     document.getElementById('btn-rematch').style.display='inline-flex';
     if(myRole==='host'){showRematchOpts();}
   }
@@ -1014,7 +1081,10 @@ function setRole(r){
   document.getElementById('f-host').style.display=r==='host'?'block':'none';
   document.getElementById('f-guest').style.display=r==='guest'?'block':'none';
   document.getElementById('host-opts').style.display=r==='host'?'block':'none';
-  if(pc){pc.close();pc=null;}
+  // Nettoyer la connexion en cours
+  clearReconnect();stopHeartbeat();
+  if(conn){try{conn.close();}catch(e){}conn=null;}
+  if(peer){try{peer.destroy();}catch(e){}peer=null;}
 }
 function setColor(c){
   myColor=c;
@@ -1029,24 +1099,6 @@ function setTimer(t){
 function setSbar(type,txt){
   const b=document.getElementById('sbar');b.className='sbar s'+type;
   document.getElementById('sbar-txt').textContent=txt;
-}
-function cp(id,btn){
-  const el=document.getElementById(id);
-  const txt=el.value;
-  const ok=()=>{const o=btn.textContent;btn.textContent='✓ Copié !';setTimeout(()=>btn.textContent=o,1400);};
-  const fallback=()=>{
-    try{
-      el.focus();el.select();el.setSelectionRange(0,99999);
-      if(document.execCommand('copy')){ok();return;}
-    }catch(e){}
-    btn.textContent='► Sélectionné — copiez !';
-    setTimeout(()=>btn.textContent='Copier le code',2500);
-  };
-  if(navigator.clipboard&&window.isSecureContext){
-    navigator.clipboard.writeText(txt).then(ok).catch(fallback);
-  }else{
-    fallback();
-  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -1067,7 +1119,6 @@ function rmSetTimer(t){
 }
 
 function showRematchOpts(){
-  // Initialiser avec la couleur inversée par défaut (équitable)
   const inv=myActualColor==='white'?'black':'white';
   rmSetColor(inv);rmSetTimer(timerSetting);
   document.getElementById('rematch-default').style.display='none';
@@ -1092,14 +1143,12 @@ function cancelRematch(fromOpp){
 }
 
 function showRematchIncoming(m){
-  // L'invité reçoit la proposition de l'hôte
   const colorLabel=m.c==='white'?'Vous jouez Noirs':'Vous jouez Blancs';
   const timerLabel=m.timer==='none'?'sans limite':m.timer;
   document.getElementById('rematch-desc').textContent=`${colorLabel} · ${timerLabel}`;
   document.getElementById('rematch-default').style.display='none';
   document.getElementById('rematch-opts').style.display='none';
   document.getElementById('rematch-incoming').style.display='block';
-  // Stocker pour usage dans acceptRematch
   document.getElementById('rematch-incoming').dataset.c=m.c;
   document.getElementById('rematch-incoming').dataset.timer=m.timer;
 }
@@ -1117,15 +1166,10 @@ function declineRematch(){
 }
 
 function doRematch(hostColor,timer){
-  // L'hôte a envoyé sa couleur ; l'invité joue l'opposé
-  if(myRole==='host'){
-    myActualColor=hostColor;
-  }else{
-    myActualColor=hostColor==='white'?'black':'white';
-  }
+  if(myRole==='host'){myActualColor=hostColor;}
+  else{myActualColor=hostColor==='white'?'black':'white';}
   timerSetting=timer;
 
-  // Reset état du jeu
   G={board:null,turn:'w',castling:{wK:1,wQ:1,bK:1,bQ:1},ep:null};
   selected=null;legalMoves=[];lastMove=null;
   capW=[];capB=[];moveHist=[];halfClock=0;fullNum=1;
@@ -1133,7 +1177,6 @@ function doRematch(hostColor,timer){
   clocks={w:0,b:0};increment=0;turnStart=null;
   if(clockIv){clearInterval(clockIv);clockIv=null;}clockOn=false;
 
-  // Nettoyer l'UI
   document.getElementById('result').classList.remove('on');
   document.getElementById('offer-bar').classList.remove('on');
   document.getElementById('promo-overlay').classList.remove('on');
@@ -1145,58 +1188,46 @@ function doRematch(hostColor,timer){
   document.getElementById('rematch-waiting').style.display='none';
   document.getElementById('rematch-incoming').style.display='none';
 
-  // Lancer
   gameActive=true;boardFlipped=myActualColor==='black';
   initBoard();initClocks();buildBoard();renderBoard();renderSide();renderMoves();
   updateClkNames();
   startClockDisplay();
 }
 
-// ═══════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════
 function resetToSetup(){
-  // Fermer la connexion WebRTC proprement
   if(clockIv){clearInterval(clockIv);clockIv=null;}
   clockOn=false;
-  if(dc){try{dc.close();}catch(e){}dc=null;}
-  if(pc){try{pc.close();}catch(e){}pc=null;}
+  clearReconnect();stopHeartbeat();
+  if(conn){try{conn.close();}catch(e){}conn=null;}
+  if(peer){try{peer.destroy();}catch(e){}peer=null;}
 
-  // Réinitialiser l'état du jeu
   G={board:null,turn:'w',castling:{wK:1,wQ:1,bK:1,bQ:1},ep:null};
   selected=null;legalMoves=[];lastMove=null;gameActive=false;
   capW=[];capB=[];moveHist=[];halfClock=0;fullNum=1;
   pendingPromo=null;boardFlipped=false;
   clocks={w:0,b:0};increment=0;turnStart=null;
-
-  // Réinitialiser les variables de session
   myRole='host';myColor='white';timerSetting='none';myActualColor='white';
+  roomId=null;
 
-  // Nettoyer l'UI du jeu
   document.getElementById('result').classList.remove('on');
   document.getElementById('offer-bar').classList.remove('on');
   document.getElementById('promo-overlay').classList.remove('on');
-
-  // Réinitialiser l'écran de setup
+  document.getElementById('reconnect-banner').classList.remove('on');
   document.getElementById('btn-gen').disabled=false;
-  document.getElementById('btn-gen').textContent='Générer mon code ♟';
+  document.getElementById('btn-gen').textContent='Générer mon code de salle ♟';
   document.getElementById('h-offer').style.display='none';
-  document.getElementById('out-offer').value='';
-  document.getElementById('in-answer').value='';
-  document.getElementById('in-offer').value='';
-  document.getElementById('out-answer').value='';
-  document.getElementById('g-answer').style.display='none';
+  document.getElementById('out-room-id').textContent='——';
+  document.getElementById('in-room-id').value='';
+  document.getElementById('btn-join').disabled=false;
 
-  // Réinitialiser les boutons du jeu
   document.getElementById('btn-draw').disabled=false;
   document.getElementById('btn-resign').disabled=false;
 
-  // Basculer les écrans
   document.getElementById('s-game').classList.remove('on');
   document.getElementById('s-setup').classList.add('on');
 
-  // Remettre les options par défaut
   setRole('host');setColor('white');setTimer('none');
-  setSbar('w','En attente de connexion…');
+  setSbar('w','En attente…');
 }
 
 // Init
