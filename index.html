@@ -202,7 +202,7 @@ h1 em{font-style:italic;color:var(--gold)}
 <body>
 <div class="app">
 <header>
-  <div class="eyebrow">P2P · Code de salle · Reconnexion auto</div>
+  <div class="eyebrow">P2P · Sans serveur · 100% gratuit</div>
   <h1>Échecs <em>P2P</em></h1>
 </header>
 
@@ -278,7 +278,11 @@ h1 em{font-style:italic;color:var(--gold)}
 <!-- ══ GAME ══ -->
 <div class="screen" id="s-game">
   <div id="reconnect-banner" class="reconnect-banner">
-    ↻ Connexion perdue — reconnexion automatique en cours…
+    <div id="reconnect-msg">↻ Connexion perdue — reconnexion automatique en cours…</div>
+    <div id="reconnect-room" style="display:none;margin-top:8px">
+      Code de salle : <span id="reconnect-room-id" style="font-family:'Courier New',monospace;font-size:1.1rem;font-weight:700;letter-spacing:.2em;color:var(--gold)"></span>
+      <button class="btn btn-out" style="padding:5px 10px;font-size:12px;margin-left:10px" onclick="cpReconnectRoom(this)">Copier</button>
+    </div>
   </div>
   <div id="offer-bar" class="offer-bar">
     <span>Nulle proposée par l'adversaire</span>
@@ -519,10 +523,21 @@ function setupConn(c, hostMeta) {
     lastHeartbeat = Date.now();
 
     if (myRole === 'host' && hostMeta) {
-      // L'hôte envoie la config de la partie dès que l'invité se connecte
-      c.send(JSON.stringify({ t: 'init', color: hostMeta.color, timer: hostMeta.timer }));
-      // Si une partie est en cours, envoyer l'état complet pour resync
+      // Si une partie est en cours, envoyer uniquement le resync (pas d'init)
+      // pour ne pas déclencher startGame() côté invité et écraser l'état.
       if (gameActive) {
+        // Snapshot cohérent : on capture clocks et turnStart au même instant
+        // puis on envoie now=Date.now() pour que l'invité puisse recaler
+        // le temps écoulé pendant le transit réseau.
+        const _now = Date.now();
+        const _clocks = {
+          w: (timerSetting!=='none' && turnStart!==null && G.turn==='w')
+              ? Math.max(0, clocks.w - (_now - turnStart))
+              : clocks.w,
+          b: (timerSetting!=='none' && turnStart!==null && G.turn==='b')
+              ? Math.max(0, clocks.b - (_now - turnStart))
+              : clocks.b,
+        };
         c.send(JSON.stringify({
           t: 'resync',
           board: G.board,
@@ -533,13 +548,18 @@ function setupConn(c, hostMeta) {
           moveHist,
           halfClock, fullNum,
           lastMove,
-          clocks,
+          clocks: _clocks,
           turnStart,
-          timerSetting
+          timerSetting,
+          now: _now,
+          guestColor: hostMeta.color === 'white' ? 'black' : 'white'
         }));
         setSbar('c', 'Adversaire reconnecté !');
         document.getElementById('reconnect-banner').classList.remove('on');
+        document.getElementById('reconnect-room').style.display = 'none';
       } else {
+        // Première connexion : envoyer init puis démarrer
+        c.send(JSON.stringify({ t: 'init', color: hostMeta.color, timer: hostMeta.timer }));
         setSbar('c', 'Connecté !');
         setTimeout(startGame, 400);
       }
@@ -565,11 +585,29 @@ function onConnLost() {
   conn = null;
   if (gameActive) {
     setSbar('r', 'Connexion perdue — reconnexion auto…');
-    document.getElementById('reconnect-banner').classList.add('on');
+    const banner = document.getElementById('reconnect-banner');
+    banner.classList.add('on');
+    // Toujours afficher le code de salle pour que l'hôte puisse le communiquer
+    if (roomId) {
+      document.getElementById('reconnect-room-id').textContent = roomId;
+      document.getElementById('reconnect-room').style.display = 'block';
+    }
     if (myRole === 'guest') scheduleReconnect();
   } else {
     setSbar('e', 'Connexion perdue');
     if (myRole === 'guest' && roomId) scheduleReconnect();
+  }
+}
+
+function cpReconnectRoom(btn) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(roomId).then(() => {
+      const o = btn.textContent; btn.textContent = '✓ Copié !';
+      setTimeout(() => btn.textContent = o, 1400);
+    });
+  } else {
+    const o = btn.textContent; btn.textContent = '✓ ' + roomId;
+    setTimeout(() => btn.textContent = o, 2000);
   }
 }
 
@@ -761,18 +799,36 @@ function handleMsg(m){
   }
   if(m.t==='resync'){
     // Resync après reconnexion (invité seulement)
+    // Restaurer la couleur au cas où la page a été rechargée
+    if(m.guestColor) myActualColor = m.guestColor;
     G.board=m.board;G.turn=m.turn;G.castling=m.castling;G.ep=m.ep;
     capW=m.capW;capB=m.capB;moveHist=m.moveHist;
     halfClock=m.halfClock;fullNum=m.fullNum;lastMove=m.lastMove;
-    clocks=m.clocks;turnStart=m.turnStart;timerSetting=m.timerSetting;
+    timerSetting=m.timerSetting;
+    // Restaurer les horloges en recalant turnStart sur l'horloge locale.
+    // L'hôte envoie m.now=Date.now() au moment de l'envoi ; on soustrait
+    // le temps de transit du tour actif pour ne pas le compter deux fois.
+    clocks=m.clocks;
+    if(m.turnStart!==null && m.now!==undefined){
+      const transit=Date.now()-m.now;
+      clocks[m.turn]=Math.max(0,clocks[m.turn]-transit);
+    }
+    turnStart=(m.turnStart!==null)?Date.now():null;
+
     document.getElementById('reconnect-banner').classList.remove('on');
+    document.getElementById('reconnect-room').style.display='none';
     setSbar('c','Reconnecté — partie en cours');
-    if(!document.getElementById('s-game').classList.contains('on')){
+
+    const inGame=document.getElementById('s-game').classList.contains('on');
+    if(!inGame){
       document.getElementById('s-setup').classList.remove('on');
       document.getElementById('s-game').classList.add('on');
-      gameActive=true;boardFlipped=myActualColor==='black';
-      buildBoard();updateClkNames();startClockDisplay();
+      boardFlipped=myActualColor==='black';
+      buildBoard();updateClkNames();
     }
+    gameActive=true;
+    if(clockIv){clearInterval(clockIv);clockIv=null;}
+    startClockDisplay();
     renderBoard();renderSide();renderMoves();
   }
   if(m.t==='mv')recvMove(m);
