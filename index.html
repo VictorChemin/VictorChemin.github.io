@@ -22,10 +22,11 @@
   --serif:'Cormorant Garamond',serif;
 }
 
+html,body{height:100%;overflow:hidden}
 body{
   background:var(--bg);color:var(--text);font-family:var(--sans);
-  font-size:15px;line-height:1.6;min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;padding:2rem 1.25rem;
+  font-size:15px;line-height:1.6;
+  display:flex;flex-direction:column;align-items:center;
 }
 body::before{
   content:'';position:fixed;inset:0;
@@ -35,20 +36,36 @@ body::before{
   pointer-events:none;z-index:0;
 }
 
-.app{position:relative;z-index:1;width:100%;max-width:980px}
-header{text-align:center;margin-bottom:2rem}
-.eyebrow{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--gold);letter-spacing:5px;text-transform:uppercase;margin-bottom:.75rem;opacity:.8;}
-h1{font-family:var(--serif);font-size:clamp(2.4rem,7vw,3.6rem);font-weight:600;color:var(--cream);letter-spacing:-.5px;line-height:1;}
+.app{
+  position:relative;z-index:1;
+  width:100%;max-width:1100px;
+  height:100vh;
+  display:flex;flex-direction:column;
+}
+
+/* ─── HEADER ─── */
+header{
+  text-align:center;
+  padding:clamp(6px,1.5vh,18px) 1.25rem clamp(4px,1vh,12px);
+  flex-shrink:0;
+}
+.eyebrow{font-size:10px;font-weight:500;color:var(--gold);letter-spacing:4px;text-transform:uppercase;margin-bottom:.3rem;opacity:.8;}
+h1{font-family:var(--serif);font-size:clamp(1.6rem,4vw,2.8rem);font-weight:600;color:var(--cream);letter-spacing:-.5px;line-height:1;}
 h1 em{font-style:italic;color:var(--gold)}
 
-.screen{display:none}.screen.on{display:block;animation:fi .35s ease}
-@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ─── SCREENS ─── */
+.screen{display:none;flex:1;min-height:0}
+.screen.on{display:flex;flex-direction:column;animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-.panel{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:1.5rem;margin-bottom:12px;}
-.plabel{font-family:var(--sans);font-size:10px;font-weight:600;color:var(--gold);letter-spacing:4px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px;opacity:.9;}
+/* ─── SETUP SCREEN : scrollable en interne ─── */
+#s-setup{overflow-y:auto;overflow-x:hidden;padding:0 1.25rem 1rem;scrollbar-width:thin;scrollbar-color:var(--brd) transparent}
+
+.panel{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:1.2rem;margin-bottom:10px;flex-shrink:0;}
+.plabel{font-size:10px;font-weight:600;color:var(--gold);letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px;opacity:.9;}
 .plabel::after{content:'';flex:1;height:1px;background:var(--brd)}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-size:14px;font-weight:500;padding:11px 22px;border-radius:8px;border:none;cursor:pointer;transition:all .18s;letter-spacing:.2px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-size:13px;font-weight:500;padding:9px 18px;border-radius:8px;border:none;cursor:pointer;transition:all .18s;letter-spacing:.2px;}
 .btn-gold{background:var(--gold);color:#0a0908;}
 .btn-gold:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,164,74,.28);}
 .btn-gold:disabled{opacity:.35;transform:none;cursor:not-allowed}
@@ -57,31 +74,16 @@ h1 em{font-style:italic;color:var(--gold)}
 .btn-out:disabled{opacity:.35;cursor:not-allowed}
 .btn-red{background:rgba(180,40,40,.18);color:#ffaaaa;border:1px solid rgba(180,60,60,.4);}
 .btn-red:hover{background:rgba(180,40,40,.3)}
-.btn-f{width:100%}.mt1{margin-top:10px}.mt2{margin-top:18px}.row{display:flex;gap:8px}
+.btn-f{width:100%}.mt1{margin-top:8px}.mt2{margin-top:14px}.row{display:flex;gap:8px}
 
-/* ROOM ID BOX */
-.room-box{
-  display:flex;align-items:center;gap:12px;
-  background:#060504;border:1px solid var(--brd);border-radius:8px;
-  padding:14px 16px;margin-bottom:12px;
-}
-.room-id{
-  font-family:'Courier New',monospace;font-size:2rem;font-weight:700;
-  color:var(--gold);letter-spacing:.25em;flex:1;text-align:center;
-}
-.room-id-small{font-size:1.1rem;letter-spacing:.2em;}
-
-.id-input{
-  font-family:'Courier New',monospace;font-size:1.6rem;font-weight:700;
-  letter-spacing:.2em;text-align:center;text-transform:uppercase;
-  background:#060504;border:1px solid var(--brd);border-radius:8px;
-  padding:12px 16px;color:var(--gold);width:100%;outline:none;
-}
+.room-box{display:flex;align-items:center;gap:12px;background:#060504;border:1px solid var(--brd);border-radius:8px;padding:12px 16px;margin-bottom:10px;}
+.room-id{font-family:'Courier New',monospace;font-size:1.8rem;font-weight:700;color:var(--gold);letter-spacing:.25em;flex:1;text-align:center;}
+.id-input{font-family:'Courier New',monospace;font-size:1.4rem;font-weight:700;letter-spacing:.2em;text-align:center;text-transform:uppercase;background:#060504;border:1px solid var(--brd);border-radius:8px;padding:10px 16px;color:var(--gold);width:100%;outline:none;}
 .id-input:focus{border-color:var(--gold-dim)}
-.id-input::placeholder{color:var(--muted);font-size:1rem;letter-spacing:.1em;}
+.id-input::placeholder{color:var(--muted);font-size:.9rem;letter-spacing:.1em;}
 
-.sbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;font-size:14px;margin-bottom:12px;border:1px solid;}
-.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sbar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:10px;border:1px solid;flex-shrink:0;}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .sw{background:rgba(255,255,255,.02);border-color:var(--brd);color:var(--muted)}
 .sw .sdot{background:var(--muted);animation:pu 2s infinite}
 .sp{background:rgba(200,164,74,.06);border-color:rgba(200,164,74,.3);color:var(--gold)}
@@ -94,76 +96,110 @@ h1 em{font-style:italic;color:var(--gold)}
 .sr .sdot{background:var(--gold);animation:pu .6s infinite}
 @keyframes pu{0%,100%{opacity:1}50%{opacity:.25}}
 
-.hint{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
-
+.hint{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
 .opt-row{display:flex;gap:8px}
-.opt-card{flex:1;border:1px solid var(--brd);border-radius:10px;padding:1rem .75rem;text-align:center;cursor:pointer;transition:all .2s;}
+.opt-card{flex:1;border:1px solid var(--brd);border-radius:10px;padding:.75rem .5rem;text-align:center;cursor:pointer;transition:all .2s;}
 .opt-card:hover{background:rgba(255,255,255,.04);border-color:var(--brd2)}
 .opt-card.sel{border-color:var(--gold);background:rgba(200,164,74,.07)}
-.opt-icon{font-size:1.8rem;margin-bottom:6px;line-height:1}
-.opt-main{font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px}
-.opt-sub{font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+.opt-icon{font-size:1.5rem;margin-bottom:4px;line-height:1}
+.opt-main{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.opt-sub{font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
 .color-card.w.sel{border-color:#c8b08a;background:rgba(200,176,138,.07)}
 .color-card.b.sel{border-color:#7a5235;background:rgba(122,82,53,.1)}
 
-.timer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
-.tc{border:1px solid var(--brd);border-radius:8px;padding:.7rem .5rem;text-align:center;cursor:pointer;transition:all .2s;font-size:12px;font-weight:500;color:var(--muted);}
+.timer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px}
+.tc{border:1px solid var(--brd);border-radius:8px;padding:.55rem .4rem;text-align:center;cursor:pointer;transition:all .2s;font-size:11px;font-weight:500;color:var(--muted);}
 .tc:hover{border-color:var(--brd2);background:rgba(255,255,255,.03)}
 .tc.sel{border-color:var(--gold);background:rgba(200,164,74,.07);color:var(--gold)}
-.tc-icon{font-size:1.1rem;margin-bottom:4px}
+.tc-icon{font-size:1rem;margin-bottom:2px}
 
-.custom-row{display:none;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.custom-row{display:none;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
 .custom-row.on{display:flex}
-.tinput{font-family:var(--sans);background:#060504;border:1px solid var(--brd);border-radius:8px;padding:8px 12px;color:var(--text);font-size:15px;width:70px;text-align:center;outline:none;}
+.tinput{font-family:var(--sans);background:#060504;border:1px solid var(--brd);border-radius:8px;padding:7px 10px;color:var(--text);font-size:14px;width:65px;text-align:center;outline:none;}
 .tinput:focus{border-color:var(--gold-dim)}
-.tlbl{font-size:14px;color:var(--muted)}
+.tlbl{font-size:13px;color:var(--muted)}
 
-.step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
-.snum{width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0a0908;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.stxt{font-size:14px;color:var(--muted);line-height:1.6}
+.step{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.snum{width:20px;height:20px;border-radius:50%;background:var(--gold);color:#0a0908;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.stxt{font-size:13px;color:var(--muted);line-height:1.5}
 .stxt strong{color:var(--text);font-weight:500}
 
-/* reconnect banner */
+/* ─── GAME SCREEN : no-scroll layout ─── */
+#s-game{
+  padding:0 clamp(6px,1.5vw,16px) clamp(6px,1vh,12px);
+  overflow:hidden;
+}
+
 .reconnect-banner{
   display:none;background:rgba(200,164,74,.08);border:1px solid rgba(200,164,74,.3);
-  border-radius:10px;padding:12px 16px;margin-bottom:10px;
-  font-size:13px;color:var(--gold);text-align:center;
+  border-radius:10px;padding:10px 14px;margin-bottom:8px;
+  font-size:12px;color:var(--gold);text-align:center;flex-shrink:0;
 }
 .reconnect-banner.on{display:block}
 
-/* ─── GAME ─── */
-.game-wrap{display:flex;gap:12px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
-.side-col{width:210px;display:flex;flex-direction:column;gap:10px;min-width:150px}
+.offer-bar{display:none;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 14px;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:13px;color:#5fdc90;flex-shrink:0;}
+.offer-bar.on{display:flex}
 
-.clock-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:14px 16px;text-align:center;transition:border-color .2s,background .2s;}
-.clk-name{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
-.clk-time{font-family:var(--serif);font-size:2.4rem;font-weight:600;color:var(--cream);letter-spacing:2px;line-height:1;}
+.result{display:none;background:var(--bg3);border:1px solid var(--brd2);border-radius:12px;padding:1rem 1.2rem;text-align:center;margin-bottom:8px;animation:fi .4s ease;flex-shrink:0;}
+.result.on{display:block}
+.result-t{font-family:var(--serif);font-size:1.6rem;font-weight:600;color:var(--cream);margin-bottom:2px}
+.result-s{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
+
+/* ─── GAME WRAP : plateau + colonnes latérales ─── */
+.game-wrap{
+  flex:1;min-height:0;
+  display:flex;gap:clamp(6px,1vw,14px);
+  align-items:stretch;justify-content:center;
+}
+
+/* Colonne latérale : hauteur = celle du plateau, items empilés */
+.side-col{
+  width:clamp(140px,16vw,200px);
+  display:flex;flex-direction:column;
+  gap:clamp(4px,.6vh,8px);
+  min-width:0;
+}
+
+.clock-box{
+  background:var(--bg3);border:1px solid var(--brd);border-radius:10px;
+  padding:clamp(6px,.8vh,12px) 12px;text-align:center;
+  transition:border-color .2s,background .2s;flex-shrink:0;
+}
+.clk-name{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px}
+.clk-time{font-family:var(--serif);font-size:clamp(1.4rem,3vw,2.2rem);font-weight:600;color:var(--cream);letter-spacing:2px;line-height:1.1;}
 .clock-box.active{border-color:var(--gold);background:rgba(200,164,74,.04)}
 .clock-box.active .clk-time{color:var(--gold)}
 .clock-box.low .clk-time{color:#e07070;animation:blink .8s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 
-.cap-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:10px 14px}
-.cap-lbl{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
-.cap-pcs{font-size:1.1rem;min-height:24px;word-break:break-all;line-height:1.5}
-.cap-adv{font-size:13px;font-weight:500;color:var(--gold);margin-top:2px}
+.cap-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:clamp(5px,.6vh,10px) 10px;flex-shrink:0;}
+.cap-lbl{font-size:9px;font-weight:600;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.cap-pcs{font-size:1rem;word-break:break-all;line-height:1.4}
+.cap-adv{font-size:12px;font-weight:500;color:var(--gold);margin-top:1px}
 
-.moves-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;flex:1}
-.moves-inner{max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--brd) transparent}
-.mv-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:4px;font-size:13px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+.moves-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:10px 10px;flex:1;min-height:0;display:flex;flex-direction:column;}
+.moves-inner{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--brd) transparent;min-height:0}
+.mv-row{display:grid;grid-template-columns:24px 1fr 1fr;gap:3px;font-size:12px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03);}
 .mv-row:last-child{border:none}
 .mv-n{color:var(--muted)}
-.mv-w,.mv-b{padding:2px 4px;border-radius:4px}
+.mv-w,.mv-b{padding:1px 3px;border-radius:3px}
 .mv-w.cur,.mv-b.cur{background:rgba(200,164,74,.12);color:var(--gold)}
 
-:root{--bs2:min(480px, calc(100vw - 52px))}
-.board-col{display:flex;flex-direction:column;align-items:center;gap:8px}
-.b-wrap{display:flex;gap:4px}
-.ranks{display:flex;flex-direction:column;justify-content:space-around;height:var(--bs2);padding:2px 0}
-.files{display:flex;justify-content:space-around;width:var(--bs2);padding:0 2px}
-.coord{font-family:var(--sans);font-size:10px;font-weight:500;color:var(--muted);width:16px;text-align:center;}
-.board{display:grid;grid-template-columns:repeat(8,1fr);width:var(--bs2);height:var(--bs2);border-radius:4px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.7),0 0 0 1px var(--brd2);}
-.sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:calc(var(--bs2)/9.5);cursor:pointer;position:relative;transition:background .08s;user-select:none;}
+/* ─── PLATEAU : taille calculée pour tenir dans la hauteur disponible ─── */
+/* On cible ~100% de la hauteur du game-wrap, en soustrayant les boutons ctrl */
+.board-col{
+  display:flex;flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(4px,.5vh,8px);
+  flex-shrink:0;
+}
+.b-wrap{display:flex;gap:4px;align-items:flex-start}
+.ranks{display:flex;flex-direction:column;justify-content:space-around;height:var(--bs);padding:2px 0}
+.files{display:flex;justify-content:space-around;width:var(--bs);padding:0 2px}
+.coord{font-size:9px;font-weight:500;color:var(--muted);width:14px;text-align:center;}
+.board{display:grid;grid-template-columns:repeat(8,1fr);width:var(--bs);height:var(--bs);border-radius:4px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.7),0 0 0 1px var(--brd2);}
+.sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:calc(var(--bs)/9.5);cursor:pointer;position:relative;transition:background .08s;user-select:none;}
 .sq.lt{background:var(--ws)}.sq.dk{background:var(--bs)}
 .sq.sel.lt{background:var(--ws-sel)}.sq.sel.dk{background:var(--bs-sel)}
 .sq.mov.lt{background:var(--ws-mov)}.sq.mov.dk{background:var(--bs-mov)}
@@ -174,28 +210,22 @@ h1 em{font-style:italic;color:var(--gold)}
 .piece{width:88%;height:88%;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:inherit;line-height:1;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));transition:transform .1s;}
 .sq:hover:not(.no-hover) .piece{transform:scale(1.1)}
 
-.ctrl-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.ctrl-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex-shrink:0;}
 
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:none;align-items:center;justify-content:center}
 .overlay.on{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--brd2);border-radius:16px;padding:2rem;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.7);max-width:340px;width:90%;}
-.modal h3{font-family:var(--serif);font-size:1.6rem;font-weight:600;color:var(--cream);margin-bottom:1.25rem}
-.promo-grid{display:flex;gap:12px;justify-content:center}
-.pp{width:68px;height:68px;border:1px solid var(--brd);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2.4rem;cursor:pointer;background:var(--bg3);transition:all .18s;}
+.modal{background:var(--bg2);border:1px solid var(--brd2);border-radius:16px;padding:1.75rem;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.7);max-width:320px;width:90%;}
+.modal h3{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--cream);margin-bottom:1rem}
+.promo-grid{display:flex;gap:10px;justify-content:center}
+.pp{width:62px;height:62px;border:1px solid var(--brd);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;cursor:pointer;background:var(--bg3);transition:all .18s;}
 .pp:hover{border-color:var(--gold);transform:scale(1.1)}
 
-.result{display:none;background:var(--bg3);border:1px solid var(--brd2);border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:12px;animation:fi .4s ease;}
-.result.on{display:block}
-.result-t{font-family:var(--serif);font-size:2rem;font-weight:600;color:var(--cream);margin-bottom:4px}
-.result-s{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
-
-.offer-bar{display:none;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:12px 16px;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:14px;color:#5fdc90;}
-.offer-bar.on{display:flex}
-
-@media(max-width:700px){
-  .game-wrap{flex-direction:column;align-items:center}
-  .side-col{width:100%;max-width:var(--bs2);flex-direction:row;flex-wrap:wrap}
-  .clock-box{flex:1}.cap-box{flex:1}.moves-box{width:100%;max-width:var(--bs2)}
+/* ─── MOBILE : colonne unique, plateau max ─── */
+@media(max-width:640px){
+  .game-wrap{flex-direction:column;align-items:center;gap:6px}
+  .side-col{width:100%;max-width:var(--bs);flex-direction:row;flex-wrap:wrap;gap:6px}
+  .clock-box{flex:1}.cap-box{flex:1;min-width:0}
+  .moves-box{width:100%;max-width:var(--bs);min-height:80px}
 }
 </style>
 </head>
@@ -381,21 +411,21 @@ h1 em{font-style:italic;color:var(--gold)}
 
 <script>
 // ═══════════════════════════════════════════════════
-// NETWORK — PeerJS avec reconnexion automatique
+// NETWORK
 // ═══════════════════════════════════════════════════
-// Architecture :
-//   L'hôte crée un Peer avec un ID = roomId (6 chars alphanumériques)
-//   L'invité se connecte à cet ID
-//   Si la connexion coupe, l'invité retente automatiquement toutes les 3s
-//   L'hôte garde son Peer ouvert en permanence → pas besoin de rééchanger de codes
+// Règle de reconnexion, simple et universelle :
+//   Celui qui RESTE connecté devient hôte et affiche un code.
+//   Celui qui REVIENT saisit ce code — comme une première connexion.
+//   Peu importe qui était hôte ou invité avant.
 
-let peer = null;       // Peer PeerJS local
-let conn = null;       // DataConnection active
+let peer = null;
+let conn = null;
 let myRole = 'host';
 let myColor = 'white';
 let timerSetting = 'none';
 let myActualColor = 'white';
-let roomId = null;     // ID de la salle (= peer ID de l'hôte)
+let roomId = null;
+let savedHostMeta = null;
 
 let reconnectTimer = null;
 let heartbeatTimer = null;
@@ -404,16 +434,43 @@ const HEARTBEAT_INTERVAL = 4000;
 const HEARTBEAT_TIMEOUT  = 12000;
 const RECONNECT_DELAY    = 3000;
 
-// Génère un ID de salle court et lisible
-function genRoomId() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans O,0,I,1 ambigus
-  let id = '';
-  for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return id;
+const PEERJS_CFG = {
+  host: '0.peerjs.com', port: 443, path: '/', secure: true,
+  config: { iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'turn:a.relay.metered.ca:80',                username:'open', credential:'open' },
+    { urls: 'turn:a.relay.metered.ca:443',               username:'open', credential:'open' },
+    { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username:'open', credential:'open' },
+  ]}
+};
+
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
 }
 
-// ─── HÔTE ───
-async function hostCreate() {
+// ─── Ouvrir un Peer en mode hôte avec un code donné ───
+function openHostPeer(code, onOpen) {
+  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+  roomId = 'chess-' + code;
+  myRole = 'host';
+  peer = new Peer(roomId, PEERJS_CFG);
+  peer.on('open', onOpen);
+  peer.on('connection', (c) => setupConn(c));
+  peer.on('error', (err) => {
+    if (err.type === 'unavailable-id') {
+      setTimeout(() => openHostPeer(genCode(), onOpen), 800);
+    } else {
+      setSbar('e', 'Erreur : ' + err.type);
+    }
+  });
+}
+
+// ─── SETUP INITIAL : hôte ───
+function hostCreate() {
   const btn = document.getElementById('btn-gen');
   btn.disabled = true; btn.textContent = 'Génération…';
 
@@ -422,148 +479,82 @@ async function hostCreate() {
   const timer = timerSetting === 'custom'
     ? `c:${document.getElementById('c-min').value||15}:${document.getElementById('c-inc').value||0}`
     : timerSetting;
+  savedHostMeta = { color, timer };
 
-  roomId = genRoomId();
-
-  // On détruit un éventuel peer précédent
-  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
-
-  // Serveur de signalisation PeerJS Cloud (100% gratuit, pas de compte nécessaire)
-  peer = new Peer('chess-' + roomId, {
-    host: '0.peerjs.com',
-    port: 443,
-    path: '/',
-    secure: true,
-    config: {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        // TURN public de metered.ca — gratuit, pas d'inscription
-        { urls: 'turn:a.relay.metered.ca:80',    username: 'open', credential: 'open' },
-        { urls: 'turn:a.relay.metered.ca:443',   username: 'open', credential: 'open' },
-        { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username: 'open', credential: 'open' },
-      ]
-    }
-  });
-
-  peer.on('open', (id) => {
-    document.getElementById('out-room-id').textContent = roomId;
+  openHostPeer(genCode(), () => {
+    const code = roomId.slice(6);
+    document.getElementById('out-room-id').textContent = code;
     document.getElementById('h-offer').style.display = 'block';
     btn.textContent = 'Code généré ✓';
-    setSbar('w', 'En attente de l\'invité… (' + roomId + ')');
-  });
-
-  peer.on('connection', (c) => {
-    // L'hôte accepte toujours la connexion entrante avec le même roomId
-    setupConn(c, { color, timer });
-  });
-
-  peer.on('error', (err) => {
-    setSbar('e', 'Erreur : ' + err.type);
-    btn.disabled = false; btn.textContent = 'Générer mon code de salle ♟';
+    setSbar('w', 'En attente de l’invité… (' + code + ')');
   });
 }
 
-// ─── INVITÉ ───
+// ─── SETUP INITIAL : invité ───
 function guestJoin() {
   const input = document.getElementById('in-room-id').value.trim().toUpperCase();
   if (input.length < 4) { setSbar('e', 'Code trop court'); return; }
-
-  roomId = input;
   document.getElementById('btn-join').disabled = true;
+  doJoinAsGuest(input);
+}
+
+// ─── Rejoindre en tant qu'invité (setup initial ou reconnexion) ───
+function doJoinAsGuest(code) {
   clearReconnect();
-  doGuestConnect();
-}
+  myRole = 'guest';
+  setSbar('p', 'Connexion…');
 
-function doGuestConnect() {
-  setSbar('p', 'Connexion à ' + roomId + '…');
-
-  if (peer && !peer.destroyed) {
-    connectToPeer();
-    return;
-  }
-
-  if (peer) { try { peer.destroy(); } catch(e){} }
-
-  peer = new Peer({
-    host: '0.peerjs.com',
-    port: 443,
-    path: '/',
-    secure: true,
-    config: {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'turn:a.relay.metered.ca:80',    username: 'open', credential: 'open' },
-        { urls: 'turn:a.relay.metered.ca:443',   username: 'open', credential: 'open' },
-        { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username: 'open', credential: 'open' },
-      ]
-    }
+  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+  peer = new Peer(PEERJS_CFG);
+  peer.on('open', () => {
+    const c = peer.connect('chess-' + code, { reliable: true });
+    setupConn(c);
   });
-
-  peer.on('open', connectToPeer);
-  peer.on('error', (err) => {
-    setSbar('e', 'Erreur réseau — nouvel essai…');
-    scheduleReconnect();
+  peer.on('error', () => {
+    setSbar('e', 'Erreur réseau — vérifiez le code');
+    document.getElementById('btn-join').disabled = false;
   });
 }
 
-function connectToPeer() {
-  if (conn) { try { conn.close(); } catch(e){} conn = null; }
-  const c = peer.connect('chess-' + roomId, { reliable: true });
-  setupConn(c, null);
+// ─── Quand quelqu'un se déconnecte : celui qui reste devient hôte ───
+function becomeWaitingHost() {
+  // Peu importe le rôle précédent : on ouvre un nouveau Peer hôte
+  // et on affiche le code dans la bannière de reconnexion.
+  if (!savedHostMeta) savedHostMeta = { color: myActualColor, timer: timerSetting };
+
+  openHostPeer(genCode(), () => {
+    const code = roomId.slice(6);
+    document.getElementById('reconnect-msg').textContent =
+      'Connexion perdue. Donnez ce code à l’adversaire :';
+    document.getElementById('reconnect-room-id').textContent = code;
+    document.getElementById('reconnect-room').style.display = 'block';
+    document.getElementById('reconnect-banner').classList.add('on');
+    setSbar('r', 'En attente de reconnexion… (' + code + ')');
+  });
 }
 
 // ─── CONNEXION COMMUNE ───
-function setupConn(c, hostMeta) {
+function setupConn(c) {
+  if (conn) { try { conn.close(); } catch(e){} }
   conn = c;
 
   c.on('open', () => {
     clearReconnect();
     lastHeartbeat = Date.now();
 
-    if (myRole === 'host' && hostMeta) {
-      // Si une partie est en cours, envoyer uniquement le resync (pas d'init)
-      // pour ne pas déclencher startGame() côté invité et écraser l'état.
+    if (myRole === 'host') {
       if (gameActive) {
-        // Snapshot cohérent : on capture clocks et turnStart au même instant
-        // puis on envoie now=Date.now() pour que l'invité puisse recaler
-        // le temps écoulé pendant le transit réseau.
-        const _now = Date.now();
-        const _clocks = {
-          w: (timerSetting!=='none' && turnStart!==null && G.turn==='w')
-              ? Math.max(0, clocks.w - (_now - turnStart))
-              : clocks.w,
-          b: (timerSetting!=='none' && turnStart!==null && G.turn==='b')
-              ? Math.max(0, clocks.b - (_now - turnStart))
-              : clocks.b,
-        };
-        c.send(JSON.stringify({
-          t: 'resync',
-          board: G.board,
-          turn: G.turn,
-          castling: G.castling,
-          ep: G.ep,
-          capW, capB,
-          moveHist,
-          halfClock, fullNum,
-          lastMove,
-          clocks: _clocks,
-          turnStart,
-          timerSetting,
-          now: _now,
-          guestColor: hostMeta.color === 'white' ? 'black' : 'white'
-        }));
-        setSbar('c', 'Adversaire reconnecté !');
+        sendResync(c);
+        setSbar('c', 'Adversaire reconnecté !');
         document.getElementById('reconnect-banner').classList.remove('on');
         document.getElementById('reconnect-room').style.display = 'none';
       } else {
-        // Première connexion : envoyer init puis démarrer
-        c.send(JSON.stringify({ t: 'init', color: hostMeta.color, timer: hostMeta.timer }));
-        setSbar('c', 'Connecté !');
+        c.send(JSON.stringify({ t: 'init', color: savedHostMeta.color, timer: savedHostMeta.timer }));
+        setSbar('c', 'Connecté !');
         setTimeout(startGame, 400);
       }
     }
+    // Côté invité : on attend init ou resync de l'hôte
 
     startHeartbeat();
   });
@@ -572,7 +563,7 @@ function setupConn(c, hostMeta) {
     lastHeartbeat = Date.now();
     let m;
     try { m = JSON.parse(raw); } catch(e) { return; }
-    if (m.t === 'hb') return; // heartbeat, ne rien faire
+    if (m.t === 'hb') return;
     handleMsg(m);
   });
 
@@ -580,42 +571,48 @@ function setupConn(c, hostMeta) {
   c.on('error', onConnLost);
 }
 
+function sendResync(c) {
+  const _now = Date.now();
+  const _clocks = {
+    w: (timerSetting!=='none' && turnStart!==null && G.turn==='w')
+        ? Math.max(0, clocks.w - (_now - turnStart)) : clocks.w,
+    b: (timerSetting!=='none' && turnStart!==null && G.turn==='b')
+        ? Math.max(0, clocks.b - (_now - turnStart)) : clocks.b,
+  };
+  c.send(JSON.stringify({
+    t: 'resync',
+    board: G.board, turn: G.turn, castling: G.castling, ep: G.ep,
+    capW, capB, moveHist, halfClock, fullNum, lastMove,
+    clocks: _clocks, turnStart, timerSetting, now: _now,
+    guestColor: savedHostMeta.color === 'white' ? 'black' : 'white'
+  }));
+}
+
 function onConnLost() {
+  if (!conn && !gameActive) return;
   stopHeartbeat();
   conn = null;
-  if (gameActive) {
-    setSbar('r', 'Connexion perdue — reconnexion auto…');
-    const banner = document.getElementById('reconnect-banner');
-    banner.classList.add('on');
-    // Toujours afficher le code de salle pour que l'hôte puisse le communiquer
-    if (roomId) {
-      document.getElementById('reconnect-room-id').textContent = roomId;
-      document.getElementById('reconnect-room').style.display = 'block';
-    }
-    if (myRole === 'guest') scheduleReconnect();
-  } else {
+
+  if (!gameActive) {
     setSbar('e', 'Connexion perdue');
-    if (myRole === 'guest' && roomId) scheduleReconnect();
+    return;
   }
+
+  // Celui qui reste affiche un code. Celui qui revient le saisira.
+  becomeWaitingHost();
 }
 
 function cpReconnectRoom(btn) {
+  const code = document.getElementById('reconnect-room-id').textContent;
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(roomId).then(() => {
-      const o = btn.textContent; btn.textContent = '✓ Copié !';
+    navigator.clipboard.writeText(code).then(() => {
+      const o = btn.textContent; btn.textContent = '✓ Copié !';
       setTimeout(() => btn.textContent = o, 1400);
     });
   } else {
-    const o = btn.textContent; btn.textContent = '✓ ' + roomId;
+    const o = btn.textContent; btn.textContent = '✓ ' + code;
     setTimeout(() => btn.textContent = o, 2000);
   }
-}
-
-function scheduleReconnect() {
-  clearReconnect();
-  reconnectTimer = setTimeout(() => {
-    if (myRole === 'guest' && roomId) doGuestConnect();
-  }, RECONNECT_DELAY);
 }
 
 function clearReconnect() {
@@ -625,12 +622,8 @@ function clearReconnect() {
 function startHeartbeat() {
   stopHeartbeat();
   heartbeatTimer = setInterval(() => {
-    // Envoyer un heartbeat
     send({ t: 'hb' });
-    // Vérifier si l'autre côté est toujours vivant
-    if (Date.now() - lastHeartbeat > HEARTBEAT_TIMEOUT) {
-      onConnLost();
-    }
+    if (Date.now() - lastHeartbeat > HEARTBEAT_TIMEOUT) onConnLost();
   }, HEARTBEAT_INTERVAL);
 }
 
@@ -840,6 +833,7 @@ function handleMsg(m){
   if(m.t==='rematch-offer')showRematchIncoming(m);
   if(m.t==='rematch-ok')doRematch(m.c,m.timer);
   if(m.t==='rematch-no')cancelRematch(true);
+  if(m.t==='quit')oppQuit();
 }
 
 function recvMove(m){
@@ -1250,10 +1244,34 @@ function doRematch(hostColor,timer){
   startClockDisplay();
 }
 
+function oppQuit(){
+  // L'adversaire a quitté — afficher un message intégré puis rediriger
+  if(clockIv){clearInterval(clockIv);clockIv=null;}
+  clockOn=false;
+  clearReconnect();stopHeartbeat();
+  if(conn){try{conn.close();}catch(e){}conn=null;}
+  if(peer){try{peer.destroy();}catch(e){}peer=null;}
+
+  // Afficher le message dans le panneau résultat
+  document.getElementById('result-t').textContent='Partie terminée';
+  document.getElementById('result-s').textContent='L’adversaire a quitté';
+  document.getElementById('result').classList.add('on');
+  document.getElementById('btn-draw').disabled=true;
+  document.getElementById('btn-resign').disabled=true;
+  document.getElementById('btn-rematch').style.display='none';
+  document.getElementById('rematch-default').style.display='flex';
+  // Masquer tous les sous-panneaux de revanche
+  document.getElementById('rematch-opts').style.display='none';
+  document.getElementById('rematch-waiting').style.display='none';
+  document.getElementById('rematch-incoming').style.display='none';
+  gameActive=false;
+}
+
 function resetToSetup(){
   if(clockIv){clearInterval(clockIv);clockIv=null;}
   clockOn=false;
   clearReconnect();stopHeartbeat();
+  send({t:'quit'}); // notifier l'adversaire avant de fermer
   if(conn){try{conn.close();}catch(e){}conn=null;}
   if(peer){try{peer.destroy();}catch(e){}peer=null;}
 
@@ -1263,7 +1281,7 @@ function resetToSetup(){
   pendingPromo=null;boardFlipped=false;
   clocks={w:0,b:0};increment=0;turnStart=null;
   myRole='host';myColor='white';timerSetting='none';myActualColor='white';
-  roomId=null;
+  roomId=null;savedHostMeta=null;
 
   document.getElementById('result').classList.remove('on');
   document.getElementById('offer-bar').classList.remove('on');
