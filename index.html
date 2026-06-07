@@ -548,6 +548,7 @@ function removeFromQueue(id) {
 function clearQueue() {
   fileQueue=fileQueue.filter(f=>f.status==='sending');
   renderQueue();
+  if(conn&&conn.open) conn.send(JSON.stringify({type:'clear-received'}));
 }
 
 async function startSendQueue() {
@@ -634,6 +635,11 @@ function handleMessage(msg) {
     case 'transfer-cancel':
       receiveBuffer=null; receiveMetadata=null;
       document.getElementById('progress-card').style.display='none';
+      break;
+    case 'clear-received':
+      receivedFiles.forEach(f=>{if(f.url)URL.revokeObjectURL(f.url);});
+      receivedFiles=[];
+      renderReceivedFiles();
       break;
   }
 }
