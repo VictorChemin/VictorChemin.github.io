@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8354452460230423"
      crossorigin="anonymous"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>FileP2P — Transfert direct</title>
+<title>FreeDrop — Drop your files, no limits</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -49,9 +49,37 @@ body::before{
 
 /* ── Header ── */
 header{text-align:center;padding:clamp(20px,4vh,36px) 0 clamp(14px,3vh,24px);}
-.logo{font-size:clamp(1.4rem,5vw,1.9rem);font-weight:600;letter-spacing:-.03em;color:var(--text);}
-.logo strong{color:var(--accent);}
-.tagline{font-size:11.5px;color:var(--text2);margin-top:5px;letter-spacing:.04em;text-transform:uppercase;font-weight:400;}
+.logo{
+  font-size:clamp(1.7rem,6vw,2.4rem);letter-spacing:-.04em;
+  color:var(--text);display:inline-flex;align-items:baseline;gap:0;
+}
+.logo-free{
+  color:var(--text);font-weight:300;letter-spacing:-.02em;
+}
+.logo-drop{
+  color:var(--accent);font-weight:700;letter-spacing:-.05em;
+  position:relative;
+}
+.logo-drop::after{
+  content:'';position:absolute;bottom:-3px;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--accent),transparent);
+  border-radius:2px;
+}
+.logo-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--accent);
+  display:inline-block;margin-left:3px;margin-bottom:7px;
+  box-shadow:0 0 8px var(--accent);
+  animation:blink 2.5s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.tagline{
+  font-size:11px;color:var(--text2);margin-top:10px;letter-spacing:.08em;
+  text-transform:uppercase;font-weight:400;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.tagline::before,.tagline::after{
+  content:'';display:inline-block;width:20px;height:1px;background:var(--brd2);
+}
 
 /* ── Screens ── */
 .screen{display:none;width:100%;flex-direction:column;gap:12px;}
@@ -243,29 +271,31 @@ hr.sep{border:none;border-top:1px solid var(--brd);margin:4px 0;}
 <body>
 <div class="app">
   <header>
-    <div class="logo">File<strong>P2P</strong></div>
-    <div class="tagline">Transfert direct · Sans serveur · Sans limite</div>
+    <div class="logo">
+      <span class="logo-free">Free</span><span class="logo-drop">Drop</span><span class="logo-dot"></span>
+    </div>
+    <div class="tagline">Drop your files, no limits</div>
   </header>
 
   <!-- ═══ SETUP ═══ -->
   <div class="screen on" id="s-setup">
 
     <div class="panel">
-      <div class="panel-title">Mode de connexion</div>
+      <div class="panel-title">Connection mode</div>
       <div class="role-row">
         <div class="role-card sel" id="rc-host" onclick="setRole('host')">
           <div class="role-icon">
             <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </div>
-          <div class="role-main">Envoyeur</div>
-          <div class="role-sub">Crée la salle</div>
+          <div class="role-main">Sender</div>
+          <div class="role-sub">Creates the room</div>
         </div>
         <div class="role-card" id="rc-guest" onclick="setRole('guest')">
           <div class="role-icon">
             <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </div>
-          <div class="role-main">Receveur</div>
-          <div class="role-sub">Rejoint la salle</div>
+          <div class="role-main">Receiver</div>
+          <div class="role-sub">Joins the room</div>
         </div>
       </div>
     </div>
@@ -273,14 +303,14 @@ hr.sep{border:none;border-top:1px solid var(--brd);margin:4px 0;}
     <!-- Host -->
     <div id="host-opts">
       <div class="panel">
-        <div class="panel-title">Créer une salle</div>
-        <button class="btn btn-primary btn-f" id="btn-gen" onclick="hostCreate()">Générer un code de salle</button>
+        <div class="panel-title">Create a room</div>
+        <button class="btn btn-primary btn-f" id="btn-gen" onclick="hostCreate()">Generate a room code</button>
         <div id="h-offer" style="display:none">
           <div class="code-box">
             <div class="code-val" id="out-room-id">——</div>
-            <button class="copy-btn" id="copy-btn" onclick="cpRoom(event)">Copier</button>
+            <button class="copy-btn" id="copy-btn" onclick="cpRoom(event)">Copy</button>
           </div>
-          <div class="hint">Transmettez ce code à votre correspondant. La connexion s'établit automatiquement dès qu'il le saisit.</div>
+          <div class="hint">Share this code with your recipient. The connection is established automatically once they enter it.</div>
         </div>
       </div>
     </div>
@@ -288,15 +318,15 @@ hr.sep{border:none;border-top:1px solid var(--brd);margin:4px 0;}
     <!-- Guest -->
     <div id="f-guest" style="display:none">
       <div class="panel">
-        <div class="panel-title">Rejoindre une salle</div>
-        <input class="code-input" id="in-room-id" maxlength="6" placeholder="CODE SALLE"
+        <div class="panel-title">Join a room</div>
+        <input class="code-input" id="in-room-id" maxlength="6" placeholder="ROOM CODE"
           oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
           onkeydown="if(event.key==='Enter')guestJoin()">
-        <button class="btn btn-primary btn-f" style="margin-top:10px" id="btn-join" onclick="guestJoin()">Se connecter</button>
+        <button class="btn btn-primary btn-f" style="margin-top:10px" id="btn-join" onclick="guestJoin()">Connect</button>
       </div>
     </div>
 
-    <div class="sbar sw" id="sbar"><div class="sdot"></div><span id="sbar-txt">En attente...</span></div>
+    <div class="sbar sw" id="sbar"><div class="sdot"></div><span id="sbar-txt">Waiting...</span></div>
   </div>
 
   <!-- ═══ TRANSFER ═══ -->
@@ -304,29 +334,29 @@ hr.sep{border:none;border-top:1px solid var(--brd);margin:4px 0;}
 
     <div class="conn-badge disc" id="conn-badge">
       <div class="conn-dot"></div>
-      <span id="conn-state">Non connecté</span>
+      <span id="conn-state">Not connected</span>
     </div>
 
     <div id="transfer-ui" style="display:none;flex-direction:column;gap:12px">
 
       <!-- Sender panel -->
       <div class="panel" id="sender-panel">
-        <div class="panel-title">Envoyer des fichiers</div>
+        <div class="panel-title">Send files</div>
         <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
           <input type="file" id="file-input" multiple onchange="onFileSelect(this.files)">
           <div class="dz-icon">
             <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </div>
-          <div class="dz-main">Cliquez ou déposez vos fichiers</div>
-          <div class="dz-sub">Plusieurs fichiers acceptés · Transfert direct P2P</div>
+          <div class="dz-main">Click or drop your files here</div>
+          <div class="dz-sub">Multiple files accepted · Direct P2P transfer</div>
         </div>
 
         <div id="queue-section" style="display:none;margin-top:12px">
-          <div class="section-label">File d'envoi</div>
+          <div class="section-label">Send queue</div>
           <div class="queue-list" id="queue-list"></div>
           <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-            <button class="btn btn-primary" id="btn-send-all" onclick="startSendQueue()" style="flex:1">Envoyer tout</button>
-            <button class="btn btn-ghost btn-sm" onclick="clearQueue()">Vider</button>
+            <button class="btn btn-primary" id="btn-send-all" onclick="startSendQueue()" style="flex:1">Send all</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearQueue()">Clear</button>
           </div>
         </div>
       </div>
@@ -343,16 +373,16 @@ hr.sep{border:none;border-top:1px solid var(--brd);margin:4px 0;}
 
       <!-- Received files -->
       <div class="panel" id="recv-panel" style="display:none">
-        <div class="panel-title">Fichiers reçus</div>
+        <div class="panel-title">Received files</div>
         <div class="recv-list" id="recv-list"></div>
         <div style="margin-top:10px;">
-          <button class="btn btn-success btn-f" id="btn-dl-all" onclick="downloadAll()">Tout télécharger</button>
+          <button class="btn btn-success btn-f" id="btn-dl-all" onclick="downloadAll()">Download all</button>
         </div>
       </div>
 
       <div class="ctrl-row">
-        <button class="btn btn-danger btn-sm" id="btn-cancel" onclick="cancelCurrentTransfer()" style="display:none">Annuler le transfert</button>
-        <button class="btn btn-ghost btn-sm" onclick="resetToSetup()">Déconnecter</button>
+        <button class="btn btn-danger btn-sm" id="btn-cancel" onclick="cancelCurrentTransfer()" style="display:none">Cancel transfer</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetToSetup()">Disconnect</button>
       </div>
     </div>
   </div>
@@ -394,14 +424,14 @@ function genCode() {
 // ─── Host ───
 function hostCreate() {
   const btn=document.getElementById('btn-gen');
-  btn.disabled=true; btn.textContent='Génération...';
+  btn.disabled=true; btn.textContent='Generating...';
   openHostPeer(genCode(), ()=>{
     // roomId = 'filep2p-XXXXXX' → code is last 6 chars
     const code = roomId.slice('filep2p-'.length);
     document.getElementById('out-room-id').textContent = code;
     document.getElementById('h-offer').style.display='block';
-    btn.textContent='Code généré';
-    setSbar('p','En attente de connexion… ('+code+')');
+    btn.textContent='Code generated';
+    setSbar('p','Waiting for connection… ('+code+')');
   });
 }
 
@@ -414,20 +444,20 @@ function openHostPeer(code, onOpen) {
   peer.on('connection', c=>setupConnection(c));
   peer.on('error', err=>{
     if(err.type==='unavailable-id') setTimeout(()=>openHostPeer(genCode(),onOpen),500);
-    else setSbar('e','Erreur : '+err.type);
+    else setSbar('e','Error: '+err.type);
   });
 }
 
 // ─── Guest ───
 function guestJoin() {
   const input=document.getElementById('in-room-id').value.trim().toUpperCase();
-  if(input.length<4){setSbar('e','Code trop court');return;}
+  if(input.length<4){setSbar('e','Code too short');return;}
   document.getElementById('btn-join').disabled=true;
   doJoinAsGuest(input);
 }
 
 function doJoinAsGuest(code) {
-  myRole='guest'; setSbar('p','Connexion...');
+  myRole='guest'; setSbar('p','Connecting...');
   if(peer){try{peer.destroy()}catch(e){}peer=null;}
   peer=new Peer(PEERJS_CFG);
   peer.on('open',()=>{
@@ -435,7 +465,7 @@ function doJoinAsGuest(code) {
     setupConnection(c);
   });
   peer.on('error',()=>{
-    setSbar('e','Erreur réseau — code invalide ?');
+    setSbar('e','Network error — invalid code?');
     document.getElementById('btn-join').disabled=false;
   });
 }
@@ -451,8 +481,8 @@ function setupConnection(c) {
     document.getElementById('transfer-ui').style.display='flex';
     const badge=document.getElementById('conn-badge');
     badge.classList.remove('disc');
-    document.getElementById('conn-state').textContent='Connecté';
-    setSbar('c','Connecté ! Prêt pour le transfert.');
+    document.getElementById('conn-state').textContent='Connected';
+    setSbar('c','Connected! Ready to transfer.');
     startSpeedMonitor();
     // Show/hide panels based on role
     document.getElementById('sender-panel').style.display = myRole==='host' ? '' : 'none';
@@ -470,8 +500,8 @@ function onDisconnect() {
   if(conn){try{conn.close()}catch(e){}conn=null;}
   const badge=document.getElementById('conn-badge');
   badge.classList.add('disc');
-  document.getElementById('conn-state').textContent='Déconnecté';
-  setSbar('e','Connexion perdue');
+  document.getElementById('conn-state').textContent='Disconnected';
+  setSbar('e','Connection lost');
   stopSpeedMonitor();
   document.getElementById('btn-cancel').style.display='none';
 }
@@ -479,7 +509,7 @@ function onDisconnect() {
 // ─── Sender queue ───
 function onFileSelect(files) {
   if(!files||files.length===0) return;
-  if(!isConnected){alert('Veuillez d\'abord établir une connexion.');return;}
+  if(!isConnected){alert('Please establish a connection first.');return;}
   for(const f of files){
     fileQueue.push({file:f, id:Date.now()+Math.random(), status:'wait'});
   }
@@ -501,7 +531,7 @@ function renderQueue() {
       <div class="queue-item-name" title="${esc(f.file.name)}">${esc(truncName(f.file.name,38))}</div>
       <div class="queue-item-size">${fmtSize(f.file.size)}</div>
       <div class="queue-item-status ${f.status}">
-        ${f.status==='wait'?'En attente':f.status==='sending'?'Envoi…':f.status==='done'?'Envoyé':'Erreur'}
+        ${f.status==='wait'?'Waiting':f.status==='sending'?'Sending…':f.status==='done'?'Sent':'Error'}
       </div>
       ${f.status==='wait'?`<button class="queue-item-rm" onclick="removeFromQueue('${f.id}')" title="Retirer">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -535,7 +565,7 @@ async function sendFileFn(file) {
     if(!conn||!conn.open){resolve();return;}
     const totalChunks=Math.ceil(file.size/CHUNK_SIZE);
     document.getElementById('progress-card').style.display='block';
-    document.getElementById('current-file-name').textContent='Envoi : '+file.name;
+    document.getElementById('current-file-name').textContent='Sending: '+file.name;
     document.getElementById('btn-cancel').style.display='inline-flex';
     conn.send(JSON.stringify({type:'file-metadata',name:file.name,size:file.size,totalChunks}));
     currentTransfer={file,totalChunks,currentChunk:0,cancelled:false,onDone:resolve};
@@ -595,7 +625,7 @@ function handleMessage(msg) {
       receiveMetadata={name:msg.name,size:msg.size,totalChunks:msg.totalChunks,receivedChunks:0};
       receiveBuffer=new Array(msg.totalChunks);
       document.getElementById('progress-card').style.display='block';
-      document.getElementById('current-file-name').textContent='Réception : '+msg.name;
+      document.getElementById('current-file-name').textContent='Receiving: '+msg.name;
       updateProgress(0,msg.size);
       break;
     case 'file-complete':
@@ -653,7 +683,7 @@ function renderReceivedFiles() {
     <div class="recv-item">
       <div class="recv-item-name" title="${esc(f.name)}">${esc(truncName(f.name,35))}</div>
       <div class="recv-item-size">${fmtSize(f.size)}</div>
-      <button class="recv-dl-btn" onclick="downloadFile(${i})">Télécharger</button>
+      <button class="recv-dl-btn" onclick="downloadFile(${i})">Download</button>
     </div>
   `).join('');
 }
@@ -705,8 +735,8 @@ function cpRoom(e) {
   const btn = e ? e.target.closest('.copy-btn') : document.getElementById('copy-btn');
   const txt = document.getElementById('out-room-id').textContent.trim();
   function showCopied(){
-    btn.textContent='Copié !'; btn.classList.add('copied');
-    setTimeout(()=>{btn.textContent='Copier'; btn.classList.remove('copied');}, 1600);
+    btn.textContent='Copied!'; btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copy'; btn.classList.remove('copied');}, 1600);
   }
   if(navigator.clipboard && window.isSecureContext){
     navigator.clipboard.writeText(txt).then(showCopied).catch(()=>fallbackCopy(txt,showCopied));
@@ -753,14 +783,14 @@ function resetToSetup(){
   document.getElementById('queue-section').style.display='none';
   document.getElementById('btn-cancel').style.display='none';
   document.getElementById('conn-badge').classList.add('disc');
-  document.getElementById('conn-state').textContent='Non connecté';
+  document.getElementById('conn-state').textContent='Not connected';
   document.getElementById('btn-gen').disabled=false;
-  document.getElementById('btn-gen').textContent='Générer un code de salle';
+  document.getElementById('btn-gen').textContent='Generate a room code';
   document.getElementById('h-offer').style.display='none';
   document.getElementById('out-room-id').textContent='——';
   document.getElementById('in-room-id').value='';
   document.getElementById('btn-join').disabled=false;
-  setRole('host'); setSbar('w','En attente...'); stopSpeedMonitor();
+  setRole('host'); setSbar('w','Waiting...'); stopSpeedMonitor();
 }
 
 // ─── Utils ───
