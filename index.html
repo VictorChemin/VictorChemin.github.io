@@ -2,1311 +2,777 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Échecs P2P</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FileP2P — Transfert direct</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a0908;--bg2:#131110;--bg3:#1a1714;
-  --brd:#2a2520;--brd2:#3a342c;
-  --gold:#c8a44a;--gold2:#e2c070;--gold-dim:#6b5420;
-  --cream:#ede5d4;--text:#d8cfc0;--muted:#7a7060;
-  --ws:#cdb08a;--bs:#7a5235;
-  --ws-sel:#e8d458;--bs-sel:#b09e1a;
-  --ws-mov:#9ed07a;--bs-mov:#5ea03a;
-  --ws-last:#d8c060;--bs-last:#a09030;
-  --check:#d84040;--r:12px;
-  --sans:'DM Sans',sans-serif;
-  --serif:'Cormorant Garamond',serif;
+  --bg:#09090d;
+  --bg2:#111116;
+  --bg3:#18181f;
+  --brd:#222230;
+  --brd2:#2e2e40;
+  --accent:#5b8fff;
+  --accent-glow:rgba(91,143,255,.15);
+  --accent-dim:rgba(91,143,255,.25);
+  --text:#d8d8e8;
+  --text2:#9898b0;
+  --success:#3ecf74;
+  --error:#f05a5a;
+  --warn:#f0b429;
+  --r:14px;
+  --r2:10px;
+  --sans:'Sora',sans-serif;
+  --mono:'JetBrains Mono',monospace;
 }
 
-html,body{height:100%;overflow:hidden}
+html,body{min-height:100%;}
 body{
   background:var(--bg);color:var(--text);font-family:var(--sans);
-  font-size:15px;line-height:1.6;
+  font-size:14px;line-height:1.6;
   display:flex;flex-direction:column;align-items:center;
+  padding-bottom:2rem;
 }
 body::before{
   content:'';position:fixed;inset:0;
   background:
-    radial-gradient(ellipse 60% 40% at 15% 10%,rgba(200,164,74,.06),transparent),
-    radial-gradient(ellipse 50% 60% at 85% 90%,rgba(122,82,53,.08),transparent);
+    radial-gradient(ellipse 50% 35% at 15% 20%,rgba(91,143,255,.06),transparent),
+    radial-gradient(ellipse 40% 30% at 85% 75%,rgba(91,143,255,.04),transparent);
   pointer-events:none;z-index:0;
 }
 
-.app{
-  position:relative;z-index:1;
-  width:100%;max-width:1100px;
-  height:100vh;
-  display:flex;flex-direction:column;
+.app{position:relative;z-index:1;width:100%;max-width:520px;padding:0 1rem;}
+
+/* ── Header ── */
+header{text-align:center;padding:clamp(20px,4vh,36px) 0 clamp(14px,3vh,24px);}
+.logo{font-size:clamp(1.4rem,5vw,1.9rem);font-weight:600;letter-spacing:-.03em;color:var(--text);}
+.logo strong{color:var(--accent);}
+.tagline{font-size:11.5px;color:var(--text2);margin-top:5px;letter-spacing:.04em;text-transform:uppercase;font-weight:400;}
+
+/* ── Screens ── */
+.screen{display:none;width:100%;flex-direction:column;gap:12px;}
+.screen.on{display:flex;animation:fadein .25s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── Panel ── */
+.panel{
+  background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);
+  padding:1.25rem;
 }
-
-/* ─── HEADER ─── */
-header{
-  text-align:center;
-  padding:clamp(6px,1.5vh,18px) 1.25rem clamp(4px,1vh,12px);
-  flex-shrink:0;
+.panel-title{
+  font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:1rem;
+  display:flex;align-items:center;gap:10px;
 }
-.eyebrow{font-size:10px;font-weight:500;color:var(--gold);letter-spacing:4px;text-transform:uppercase;margin-bottom:.3rem;opacity:.8;}
-h1{font-family:var(--serif);font-size:clamp(1.6rem,4vw,2.8rem);font-weight:600;color:var(--cream);letter-spacing:-.5px;line-height:1;}
-h1 em{font-style:italic;color:var(--gold)}
+.panel-title::after{content:'';flex:1;height:1px;background:var(--brd);}
 
-/* ─── SCREENS ─── */
-.screen{display:none;flex:1;min-height:0}
-.screen.on{display:flex;flex-direction:column;animation:fi .3s ease}
-@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-
-/* ─── SETUP SCREEN : scrollable en interne ─── */
-#s-setup{overflow-y:auto;overflow-x:hidden;padding:0 1.25rem 1rem;scrollbar-width:thin;scrollbar-color:var(--brd) transparent}
-
-.panel{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:1.2rem;margin-bottom:10px;flex-shrink:0;}
-.plabel{font-size:10px;font-weight:600;color:var(--gold);letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px;opacity:.9;}
-.plabel::after{content:'';flex:1;height:1px;background:var(--brd)}
-
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-size:13px;font-weight:500;padding:9px 18px;border-radius:8px;border:none;cursor:pointer;transition:all .18s;letter-spacing:.2px;}
-.btn-gold{background:var(--gold);color:#0a0908;}
-.btn-gold:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,164,74,.28);}
-.btn-gold:disabled{opacity:.35;transform:none;cursor:not-allowed}
-.btn-out{background:transparent;color:var(--text);border:1px solid var(--brd2);}
-.btn-out:hover{background:rgba(255,255,255,.04);border-color:var(--muted)}
-.btn-out:disabled{opacity:.35;cursor:not-allowed}
-.btn-red{background:rgba(180,40,40,.18);color:#ffaaaa;border:1px solid rgba(180,60,60,.4);}
-.btn-red:hover{background:rgba(180,40,40,.3)}
-.btn-f{width:100%}.mt1{margin-top:8px}.mt2{margin-top:14px}.row{display:flex;gap:8px}
-
-.room-box{display:flex;align-items:center;gap:12px;background:#060504;border:1px solid var(--brd);border-radius:8px;padding:12px 16px;margin-bottom:10px;}
-.room-id{font-family:'Courier New',monospace;font-size:1.8rem;font-weight:700;color:var(--gold);letter-spacing:.25em;flex:1;text-align:center;}
-.id-input{font-family:'Courier New',monospace;font-size:1.4rem;font-weight:700;letter-spacing:.2em;text-align:center;text-transform:uppercase;background:#060504;border:1px solid var(--brd);border-radius:8px;padding:10px 16px;color:var(--gold);width:100%;outline:none;}
-.id-input:focus{border-color:var(--gold-dim)}
-.id-input::placeholder{color:var(--muted);font-size:.9rem;letter-spacing:.1em;}
-
-.sbar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:10px;border:1px solid;flex-shrink:0;}
-.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.sw{background:rgba(255,255,255,.02);border-color:var(--brd);color:var(--muted)}
-.sw .sdot{background:var(--muted);animation:pu 2s infinite}
-.sp{background:rgba(200,164,74,.06);border-color:rgba(200,164,74,.3);color:var(--gold)}
-.sp .sdot{background:var(--gold);animation:pu 1s infinite}
-.sc{background:rgba(74,222,128,.07);border-color:rgba(74,222,128,.3);color:#5fdc90}
-.sc .sdot{background:#5fdc90}
-.se{background:rgba(220,70,70,.07);border-color:rgba(220,70,70,.3);color:#e07070}
-.se .sdot{background:#e07070}
-.sr{background:rgba(200,164,74,.04);border-color:rgba(200,164,74,.2);color:var(--gold)}
-.sr .sdot{background:var(--gold);animation:pu .6s infinite}
-@keyframes pu{0%,100%{opacity:1}50%{opacity:.25}}
-
-.hint{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
-.opt-row{display:flex;gap:8px}
-.opt-card{flex:1;border:1px solid var(--brd);border-radius:10px;padding:.75rem .5rem;text-align:center;cursor:pointer;transition:all .2s;}
-.opt-card:hover{background:rgba(255,255,255,.04);border-color:var(--brd2)}
-.opt-card.sel{border-color:var(--gold);background:rgba(200,164,74,.07)}
-.opt-icon{font-size:1.5rem;margin-bottom:4px;line-height:1}
-.opt-main{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
-.opt-sub{font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
-.color-card.w.sel{border-color:#c8b08a;background:rgba(200,176,138,.07)}
-.color-card.b.sel{border-color:#7a5235;background:rgba(122,82,53,.1)}
-
-.timer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px}
-.tc{border:1px solid var(--brd);border-radius:8px;padding:.55rem .4rem;text-align:center;cursor:pointer;transition:all .2s;font-size:11px;font-weight:500;color:var(--muted);}
-.tc:hover{border-color:var(--brd2);background:rgba(255,255,255,.03)}
-.tc.sel{border-color:var(--gold);background:rgba(200,164,74,.07);color:var(--gold)}
-.tc-icon{font-size:1rem;margin-bottom:2px}
-
-.custom-row{display:none;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
-.custom-row.on{display:flex}
-.tinput{font-family:var(--sans);background:#060504;border:1px solid var(--brd);border-radius:8px;padding:7px 10px;color:var(--text);font-size:14px;width:65px;text-align:center;outline:none;}
-.tinput:focus{border-color:var(--gold-dim)}
-.tlbl{font-size:13px;color:var(--muted)}
-
-.step{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
-.snum{width:20px;height:20px;border-radius:50%;background:var(--gold);color:#0a0908;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.stxt{font-size:13px;color:var(--muted);line-height:1.5}
-.stxt strong{color:var(--text);font-weight:500}
-
-/* ─── GAME SCREEN : no-scroll layout ─── */
-#s-game{
-  padding:0 clamp(6px,1.5vw,16px) clamp(6px,1vh,12px);
-  overflow:hidden;
+/* ── Role selector ── */
+.role-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.role-card{
+  border:1px solid var(--brd);border-radius:var(--r2);padding:.9rem .6rem;
+  text-align:center;cursor:pointer;transition:all .18s;user-select:none;
+  background:var(--bg3);
 }
+.role-card:hover{border-color:var(--brd2);background:rgba(255,255,255,.02);}
+.role-card.sel{border-color:var(--accent);background:var(--accent-glow);}
+.role-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;background:var(--brd);}
+.role-card.sel .role-icon{background:var(--accent-dim);}
+.role-icon svg{width:17px;height:17px;stroke:var(--text2);fill:none;stroke-width:1.8;}
+.role-card.sel .role-icon svg{stroke:var(--accent);}
+.role-main{font-size:13px;font-weight:500;margin-bottom:2px;}
+.role-sub{font-size:10.5px;color:var(--text2);}
 
-.reconnect-banner{
-  display:none;background:rgba(200,164,74,.08);border:1px solid rgba(200,164,74,.3);
-  border-radius:10px;padding:10px 14px;margin-bottom:8px;
-  font-size:12px;color:var(--gold);text-align:center;flex-shrink:0;
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  font-family:var(--sans);font-size:13px;font-weight:500;
+  padding:10px 18px;border-radius:9px;border:none;cursor:pointer;
+  transition:all .16s;text-decoration:none;
 }
-.reconnect-banner.on{display:block}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 6px 20px rgba(91,143,255,.3);}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--brd2);}
+.btn-ghost:hover:not(:disabled){background:rgba(255,255,255,.03);color:var(--text);border-color:var(--text2);}
+.btn-ghost:disabled{opacity:.35;cursor:not-allowed;}
+.btn-danger{background:transparent;color:var(--error);border:1px solid rgba(240,90,90,.25);}
+.btn-danger:hover{background:rgba(240,90,90,.07);}
+.btn-success{background:rgba(62,207,116,.12);color:var(--success);border:1px solid rgba(62,207,116,.3);}
+.btn-success:hover{background:rgba(62,207,116,.18);}
+.btn-f{width:100%;}
+.btn-sm{padding:6px 12px;font-size:11.5px;border-radius:7px;}
 
-.offer-bar{display:none;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 14px;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:13px;color:#5fdc90;flex-shrink:0;}
-.offer-bar.on{display:flex}
-
-.result{display:none;background:var(--bg3);border:1px solid var(--brd2);border-radius:12px;padding:1rem 1.2rem;text-align:center;margin-bottom:8px;animation:fi .4s ease;flex-shrink:0;}
-.result.on{display:block}
-.result-t{font-family:var(--serif);font-size:1.6rem;font-weight:600;color:var(--cream);margin-bottom:2px}
-.result-s{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
-
-/* ─── GAME WRAP : plateau + colonnes latérales ─── */
-.game-wrap{
-  flex:1;min-height:0;
-  display:flex;gap:clamp(6px,1vw,14px);
-  align-items:stretch;justify-content:center;
+/* ── Code box ── */
+.code-box{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg);border:1px solid var(--brd);border-radius:10px;
+  padding:12px 16px;margin-top:10px;
 }
-
-/* Colonne latérale : hauteur = celle du plateau, items empilés */
-.side-col{
-  width:clamp(140px,16vw,200px);
-  display:flex;flex-direction:column;
-  gap:clamp(4px,.6vh,8px);
-  min-width:0;
+.code-val{
+  font-family:var(--mono);font-size:1.75rem;font-weight:600;
+  color:var(--accent);letter-spacing:.22em;flex:1;text-align:center;
 }
-
-.clock-box{
-  background:var(--bg3);border:1px solid var(--brd);border-radius:10px;
-  padding:clamp(6px,.8vh,12px) 12px;text-align:center;
-  transition:border-color .2s,background .2s;flex-shrink:0;
+.copy-btn{
+  flex-shrink:0;font-family:var(--sans);font-size:12px;font-weight:500;
+  padding:7px 14px;border-radius:7px;border:1px solid var(--brd2);
+  background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;
+  white-space:nowrap;
 }
-.clk-name{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px}
-.clk-time{font-family:var(--serif);font-size:clamp(1.4rem,3vw,2.2rem);font-weight:600;color:var(--cream);letter-spacing:2px;line-height:1.1;}
-.clock-box.active{border-color:var(--gold);background:rgba(200,164,74,.04)}
-.clock-box.active .clk-time{color:var(--gold)}
-.clock-box.low .clk-time{color:#e07070;animation:blink .8s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+.copy-btn:hover{background:rgba(255,255,255,.04);color:var(--text);}
+.copy-btn.copied{color:var(--success);border-color:rgba(62,207,116,.3);background:rgba(62,207,116,.07);}
 
-.cap-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:clamp(5px,.6vh,10px) 10px;flex-shrink:0;}
-.cap-lbl{font-size:9px;font-weight:600;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
-.cap-pcs{font-size:1rem;word-break:break-all;line-height:1.4}
-.cap-adv{font-size:12px;font-weight:500;color:var(--gold);margin-top:1px}
-
-.moves-box{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:10px 10px;flex:1;min-height:0;display:flex;flex-direction:column;}
-.moves-inner{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--brd) transparent;min-height:0}
-.mv-row{display:grid;grid-template-columns:24px 1fr 1fr;gap:3px;font-size:12px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03);}
-.mv-row:last-child{border:none}
-.mv-n{color:var(--muted)}
-.mv-w,.mv-b{padding:1px 3px;border-radius:3px}
-.mv-w.cur,.mv-b.cur{background:rgba(200,164,74,.12);color:var(--gold)}
-
-/* ─── PLATEAU : taille calculée pour tenir dans la hauteur disponible ─── */
-/* On cible ~100% de la hauteur du game-wrap, en soustrayant les boutons ctrl */
-.board-col{
-  display:flex;flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:clamp(4px,.5vh,8px);
-  flex-shrink:0;
+.code-input{
+  font-family:var(--mono);font-size:1.4rem;font-weight:600;letter-spacing:.2em;
+  text-align:center;text-transform:uppercase;
+  background:var(--bg);border:1px solid var(--brd);border-radius:9px;
+  padding:11px 16px;color:var(--accent);width:100%;outline:none;
+  transition:border-color .15s;
 }
-.b-wrap{display:flex;gap:4px;align-items:flex-start}
-.ranks{display:flex;flex-direction:column;justify-content:space-around;height:var(--bs);padding:2px 0}
-.files{display:flex;justify-content:space-around;width:var(--bs);padding:0 2px}
-.coord{font-size:9px;font-weight:500;color:var(--muted);width:14px;text-align:center;}
-.board{display:grid;grid-template-columns:repeat(8,1fr);width:var(--bs);height:var(--bs);border-radius:4px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.7),0 0 0 1px var(--brd2);}
-.sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:calc(var(--bs)/9.5);cursor:pointer;position:relative;transition:background .08s;user-select:none;}
-.sq.lt{background:var(--ws)}.sq.dk{background:var(--bs)}
-.sq.sel.lt{background:var(--ws-sel)}.sq.sel.dk{background:var(--bs-sel)}
-.sq.mov.lt{background:var(--ws-mov)}.sq.mov.dk{background:var(--bs-mov)}
-.sq.lst.lt{background:var(--ws-last)}.sq.lst.dk{background:var(--bs-last)}
-.sq.chk{background:var(--check) !important}
-.sq.mov::after{content:'';position:absolute;width:28%;height:28%;border-radius:50%;background:rgba(0,0,0,.16);pointer-events:none}
-.sq.mov.occ::after{width:100%;height:100%;border-radius:0;background:transparent;box-shadow:inset 0 0 0 3px rgba(0,0,0,.2)}
-.piece{width:88%;height:88%;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:inherit;line-height:1;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));transition:transform .1s;}
-.sq:hover:not(.no-hover) .piece{transform:scale(1.1)}
+.code-input:focus{border-color:var(--accent-dim);}
+.code-input::placeholder{color:var(--text2);font-size:.85rem;letter-spacing:.08em;}
 
-.ctrl-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex-shrink:0;}
+/* ── Status bar ── */
+.sbar{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px;border-radius:9px;font-size:12.5px;border:1px solid;
+}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sw{background:rgba(255,255,255,.02);border-color:var(--brd);color:var(--text2);}
+.sw .sdot{background:var(--text2);}
+.sp{background:rgba(91,143,255,.06);border-color:var(--accent-dim);color:var(--accent);}
+.sp .sdot{background:var(--accent);animation:pulse 1.2s ease-in-out infinite;}
+.sc{background:rgba(62,207,116,.06);border-color:rgba(62,207,116,.25);color:var(--success);}
+.sc .sdot{background:var(--success);}
+.se{background:rgba(240,90,90,.06);border-color:rgba(240,90,90,.25);color:var(--error);}
+.se .sdot{background:var(--error);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;display:none;align-items:center;justify-content:center}
-.overlay.on{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--brd2);border-radius:16px;padding:1.75rem;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.7);max-width:320px;width:90%;}
-.modal h3{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--cream);margin-bottom:1rem}
-.promo-grid{display:flex;gap:10px;justify-content:center}
-.pp{width:62px;height:62px;border:1px solid var(--brd);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;cursor:pointer;background:var(--bg3);transition:all .18s;}
-.pp:hover{border-color:var(--gold);transform:scale(1.1)}
+/* ── Hint ── */
+.hint{font-size:11.5px;color:var(--text2);margin-top:8px;line-height:1.5;}
 
-/* ─── MOBILE : colonne unique, plateau max ─── */
-@media(max-width:640px){
-  .game-wrap{flex-direction:column;align-items:center;gap:6px}
-  .side-col{width:100%;max-width:var(--bs);flex-direction:row;flex-wrap:wrap;gap:6px}
-  .clock-box{flex:1}.cap-box{flex:1;min-width:0}
-  .moves-box{width:100%;max-width:var(--bs);min-height:80px}
+/* ── Transfer screen ── */
+.conn-badge{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;border-radius:9px;font-size:12px;font-weight:500;
+  background:rgba(62,207,116,.06);border:1px solid rgba(62,207,116,.2);color:var(--success);
+}
+.conn-badge.disc{background:rgba(240,90,90,.06);border-color:rgba(240,90,90,.2);color:var(--error);}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;}
+.conn-badge.disc .conn-dot{background:var(--error);}
+
+/* ── Drop zone ── */
+.drop-zone{
+  background:var(--bg3);border:1.5px dashed var(--brd2);border-radius:var(--r);
+  padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;
+  position:relative;
+}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(91,143,255,.03);}
+.drop-zone input{display:none;}
+.dz-icon{margin-bottom:10px;}
+.dz-icon svg{width:32px;height:32px;stroke:var(--text2);fill:none;stroke-width:1.5;}
+.dz-main{font-size:13.5px;font-weight:500;margin-bottom:4px;}
+.dz-sub{font-size:11.5px;color:var(--text2);}
+
+/* ── Progress ── */
+.progress-card{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);padding:1rem;}
+.prog-name{font-size:12px;color:var(--text2);margin-bottom:8px;word-break:break-all;}
+.prog-bar-wrap{background:var(--brd);border-radius:20px;height:5px;overflow:hidden;}
+.prog-bar{background:linear-gradient(90deg,var(--accent),#8ab4ff);height:100%;width:0%;transition:width .2s;}
+.prog-footer{display:flex;justify-content:space-between;margin-top:6px;}
+.prog-speed{font-family:var(--mono);font-size:11px;color:var(--text2);}
+.prog-pct{font-family:var(--mono);font-size:11px;color:var(--accent);}
+
+/* ── File queue (sender) ── */
+.queue-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+.queue-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;background:var(--bg);border:1px solid var(--brd);border-radius:9px;
+}
+.queue-item-name{flex:1;font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.queue-item-size{font-size:11px;color:var(--text2);white-space:nowrap;}
+.queue-item-status{font-size:11px;white-space:nowrap;}
+.queue-item-status.wait{color:var(--text2);}
+.queue-item-status.sending{color:var(--accent);}
+.queue-item-status.done{color:var(--success);}
+.queue-item-status.error{color:var(--error);}
+.queue-item-rm{
+  background:none;border:none;cursor:pointer;color:var(--text2);
+  padding:2px;line-height:0;border-radius:4px;transition:color .14s;flex-shrink:0;
+}
+.queue-item-rm:hover{color:var(--error);}
+.queue-item-rm svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+
+/* ── Received files ── */
+.recv-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+.recv-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;background:var(--bg);border:1px solid var(--brd);border-radius:9px;
+}
+.recv-item-name{flex:1;font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.recv-item-size{font-size:11px;color:var(--text2);white-space:nowrap;flex-shrink:0;}
+.recv-dl-btn{
+  flex-shrink:0;font-family:var(--sans);font-size:11px;font-weight:500;
+  padding:5px 10px;border-radius:6px;border:1px solid rgba(62,207,116,.3);
+  background:rgba(62,207,116,.08);color:var(--success);cursor:pointer;
+  transition:all .14s;white-space:nowrap;
+}
+.recv-dl-btn:hover{background:rgba(62,207,116,.18);}
+
+.section-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:6px;}
+
+.ctrl-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding-top:4px;}
+
+.empty-msg{font-size:12px;color:var(--text2);text-align:center;padding:16px 0;}
+
+/* ── Divider ── */
+hr.sep{border:none;border-top:1px solid var(--brd);margin:4px 0;}
+
+/* ── Mobile ── */
+@media(max-width:480px){
+  .code-val{font-size:1.45rem;letter-spacing:.18em;}
+  .code-input{font-size:1.2rem;}
+  .ctrl-row{gap:6px;}
+  .btn{font-size:12.5px;padding:9px 14px;}
 }
 </style>
 </head>
 <body>
 <div class="app">
-<header>
-  <div class="eyebrow">P2P · Sans serveur · 100% gratuit</div>
-  <h1>Échecs <em>P2P</em></h1>
-</header>
+  <header>
+    <div class="logo">File<strong>P2P</strong></div>
+    <div class="tagline">Transfert direct · Sans serveur · Sans limite</div>
+  </header>
 
-<!-- ══ SETUP ══ -->
-<div class="screen on" id="s-setup">
-  <div class="panel">
-    <div class="plabel">Votre rôle</div>
-    <div class="opt-row">
-      <div class="opt-card sel" id="rc-host" onclick="setRole('host')"><div class="opt-icon">♔</div><div class="opt-main">Hôte</div><div class="opt-sub">Crée la partie</div></div>
-      <div class="opt-card" id="rc-guest" onclick="setRole('guest')"><div class="opt-icon">♞</div><div class="opt-main">Invité</div><div class="opt-sub">Rejoint la partie</div></div>
-    </div>
-  </div>
+  <!-- ═══ SETUP ═══ -->
+  <div class="screen on" id="s-setup">
 
-  <div id="host-opts">
     <div class="panel">
-      <div class="plabel">Votre couleur</div>
-      <div class="opt-row">
-        <div class="opt-card color-card w sel" id="cc-white" onclick="setColor('white')"><div class="opt-icon">♔</div><div class="opt-main" style="color:var(--cream)">Blancs</div><div class="opt-sub">Commence</div></div>
-        <div class="opt-card color-card b" id="cc-black" onclick="setColor('black')"><div class="opt-icon" style="color:#8b5e3c">♚</div><div class="opt-main">Noirs</div><div class="opt-sub">Répond</div></div>
-        <div class="opt-card" id="cc-random" onclick="setColor('random')"><div class="opt-icon">⚄</div><div class="opt-main">Aléatoire</div><div class="opt-sub">Au hasard</div></div>
+      <div class="panel-title">Mode de connexion</div>
+      <div class="role-row">
+        <div class="role-card sel" id="rc-host" onclick="setRole('host')">
+          <div class="role-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="role-main">Envoyeur</div>
+          <div class="role-sub">Crée la salle</div>
+        </div>
+        <div class="role-card" id="rc-guest" onclick="setRole('guest')">
+          <div class="role-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div class="role-main">Receveur</div>
+          <div class="role-sub">Rejoint la salle</div>
+        </div>
       </div>
     </div>
-    <div class="panel">
-      <div class="plabel">Contrôle du temps</div>
-      <div class="timer-grid">
-        <div class="tc sel" id="tp-none" onclick="setTimer('none')"><div class="tc-icon">∞</div>Sans limite</div>
-        <div class="tc" id="tp-1+0" onclick="setTimer('1+0')"><div class="tc-icon">⚡</div>1+0 Bullet</div>
-        <div class="tc" id="tp-2+1" onclick="setTimer('2+1')"><div class="tc-icon">🔥</div>2+1 Bullet</div>
-        <div class="tc" id="tp-3+0" onclick="setTimer('3+0')"><div class="tc-icon">⏱</div>3+0 Blitz</div>
-        <div class="tc" id="tp-3+2" onclick="setTimer('3+2')"><div class="tc-icon">⏱</div>3+2 Blitz</div>
-        <div class="tc" id="tp-5+0" onclick="setTimer('5+0')"><div class="tc-icon">⏱</div>5+0 Blitz</div>
-        <div class="tc" id="tp-5+3" onclick="setTimer('5+3')"><div class="tc-icon">⏱</div>5+3 Blitz</div>
-        <div class="tc" id="tp-10+0" onclick="setTimer('10+0')"><div class="tc-icon">🕐</div>10+0 Rapide</div>
-        <div class="tc" id="tp-custom" onclick="setTimer('custom')"><div class="tc-icon">✎</div>Personnalisé</div>
-      </div>
-      <div class="custom-row" id="custom-row">
-        <input class="tinput" id="c-min" type="number" min="1" max="180" value="15"><span class="tlbl">min</span>
-        <span class="tlbl">+</span>
-        <input class="tinput" id="c-inc" type="number" min="0" max="60" value="10"><span class="tlbl">sec / coup</span>
+
+    <!-- Host -->
+    <div id="host-opts">
+      <div class="panel">
+        <div class="panel-title">Créer une salle</div>
+        <button class="btn btn-primary btn-f" id="btn-gen" onclick="hostCreate()">Générer un code de salle</button>
+        <div id="h-offer" style="display:none">
+          <div class="code-box">
+            <div class="code-val" id="out-room-id">——</div>
+            <button class="copy-btn" id="copy-btn" onclick="cpRoom(event)">Copier</button>
+          </div>
+          <div class="hint">Transmettez ce code à votre correspondant. La connexion s'établit automatiquement dès qu'il le saisit.</div>
+        </div>
       </div>
     </div>
+
+    <!-- Guest -->
+    <div id="f-guest" style="display:none">
+      <div class="panel">
+        <div class="panel-title">Rejoindre une salle</div>
+        <input class="code-input" id="in-room-id" maxlength="6" placeholder="CODE SALLE"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+          onkeydown="if(event.key==='Enter')guestJoin()">
+        <button class="btn btn-primary btn-f" style="margin-top:10px" id="btn-join" onclick="guestJoin()">Se connecter</button>
+      </div>
+    </div>
+
+    <div class="sbar sw" id="sbar"><div class="sdot"></div><span id="sbar-txt">En attente...</span></div>
   </div>
 
-  <!-- HOST PANEL -->
-  <div id="f-host">
-    <div class="panel">
-      <div class="plabel">Code de votre salle</div>
-      <div class="step"><div class="snum">1</div><div class="stxt">Cliquez pour générer votre <strong>code de salle</strong> (6 lettres) et envoyez-le à votre adversaire. C'est tout — plus besoin de codes de réponse.</div></div>
-      <button class="btn btn-gold btn-f" id="btn-gen" onclick="hostCreate()">Générer mon code de salle ♟</button>
-      <div id="h-offer" style="display:none">
-        <div class="room-box mt2">
-          <div class="room-id" id="out-room-id">——</div>
-          <button class="btn btn-out" style="padding:9px 14px;font-size:13px" onclick="cpRoom()">Copier</button>
-        </div>
-        <div class="hint">↑ Envoyez ce code à votre adversaire (SMS, mail…)<br>La connexion s'établit automatiquement dès qu'il le saisit.</div>
-      </div>
-    </div>
-  </div>
+  <!-- ═══ TRANSFER ═══ -->
+  <div class="screen" id="s-transfer">
 
-  <!-- GUEST PANEL -->
-  <div id="f-guest" style="display:none">
-    <div class="panel">
-      <div class="plabel">Rejoindre une partie</div>
-      <div class="step"><div class="snum">1</div><div class="stxt">Saisissez le <strong>code de salle</strong> envoyé par l'hôte :</div></div>
-      <input class="id-input" id="in-room-id" maxlength="6" placeholder="ex : ABC123" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
-      <button class="btn btn-gold btn-f mt1" id="btn-join" onclick="guestJoin()">Rejoindre →</button>
+    <div class="conn-badge disc" id="conn-badge">
+      <div class="conn-dot"></div>
+      <span id="conn-state">Non connecté</span>
     </div>
-  </div>
 
-  <div class="sbar sw" id="sbar"><div class="sdot"></div><span id="sbar-txt">En attente…</span></div>
-</div>
+    <div id="transfer-ui" style="display:none;flex-direction:column;gap:12px">
 
-<!-- ══ GAME ══ -->
-<div class="screen" id="s-game">
-  <div id="reconnect-banner" class="reconnect-banner">
-    <div id="reconnect-msg">↻ Connexion perdue — reconnexion automatique en cours…</div>
-    <div id="reconnect-room" style="display:none;margin-top:8px">
-      Code de salle : <span id="reconnect-room-id" style="font-family:'Courier New',monospace;font-size:1.1rem;font-weight:700;letter-spacing:.2em;color:var(--gold)"></span>
-      <button class="btn btn-out" style="padding:5px 10px;font-size:12px;margin-left:10px" onclick="cpReconnectRoom(this)">Copier</button>
-    </div>
-  </div>
-  <div id="offer-bar" class="offer-bar">
-    <span>Nulle proposée par l'adversaire</span>
-    <div style="display:flex;gap:6px">
-      <button class="btn btn-gold" style="padding:6px 12px" onclick="respondDraw(true)">Accepter</button>
-      <button class="btn btn-out" style="padding:6px 12px" onclick="respondDraw(false)">Refuser</button>
-    </div>
-  </div>
-  <div id="result" class="result">
-    <div class="result-t" id="result-t"></div>
-    <div class="result-s" id="result-s"></div>
-    <div id="rematch-panel" style="margin-top:14px">
-      <div id="rematch-opts" style="display:none">
-        <div class="plabel" style="margin-bottom:10px;justify-content:center">Revanche — Options</div>
-        <div class="opt-row" style="margin-bottom:8px">
-          <div class="opt-card color-card w sel" id="rm-cc-white" onclick="rmSetColor('white')"><div class="opt-icon">♔</div><div class="opt-main" style="color:var(--cream)">Blancs</div></div>
-          <div class="opt-card color-card b" id="rm-cc-black" onclick="rmSetColor('black')"><div class="opt-icon" style="color:#8b5e3c">♚</div><div class="opt-main">Noirs</div></div>
-          <div class="opt-card" id="rm-cc-random" onclick="rmSetColor('random')"><div class="opt-icon">⚄</div><div class="opt-main">Aléatoire</div></div>
+      <!-- Sender panel -->
+      <div class="panel" id="sender-panel">
+        <div class="panel-title">Envoyer des fichiers</div>
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <input type="file" id="file-input" multiple onchange="onFileSelect(this.files)">
+          <div class="dz-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="dz-main">Cliquez ou déposez vos fichiers</div>
+          <div class="dz-sub">Plusieurs fichiers acceptés · Transfert direct P2P</div>
         </div>
-        <div class="timer-grid" style="margin-bottom:10px">
-          <div class="tc sel" id="rm-tp-none" onclick="rmSetTimer('none')"><div class="tc-icon">∞</div>Sans limite</div>
-          <div class="tc" id="rm-tp-1+0" onclick="rmSetTimer('1+0')"><div class="tc-icon">⚡</div>1+0</div>
-          <div class="tc" id="rm-tp-3+0" onclick="rmSetTimer('3+0')"><div class="tc-icon">⏱</div>3+0</div>
-          <div class="tc" id="rm-tp-3+2" onclick="rmSetTimer('3+2')"><div class="tc-icon">⏱</div>3+2</div>
-          <div class="tc" id="rm-tp-5+0" onclick="rmSetTimer('5+0')"><div class="tc-icon">⏱</div>5+0</div>
-          <div class="tc" id="rm-tp-10+0" onclick="rmSetTimer('10+0')"><div class="tc-icon">🕐</div>10+0</div>
-        </div>
-        <div class="row" style="justify-content:center">
-          <button class="btn btn-gold" onclick="sendRematch()">⚔ Proposer la revanche</button>
-          <button class="btn btn-out" onclick="resetToSetup()">↩ Quitter</button>
+
+        <div id="queue-section" style="display:none;margin-top:12px">
+          <div class="section-label">File d'envoi</div>
+          <div class="queue-list" id="queue-list"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="btn-send-all" onclick="startSendQueue()" style="flex:1">Envoyer tout</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearQueue()">Vider</button>
+          </div>
         </div>
       </div>
-      <div id="rematch-waiting" style="display:none;text-align:center">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Proposition envoyée… en attente de réponse</div>
-        <button class="btn btn-out" onclick="cancelRematch()">Annuler</button>
-      </div>
-      <div id="rematch-incoming" style="display:none;background:#4ade8010;border:1px solid #4ade8030;border-radius:8px;padding:12px;text-align:center">
-        <div style="font-size:12px;color:#4ade80;margin-bottom:4px">⚔ Revanche proposée !</div>
-        <div id="rematch-desc" style="font-size:10px;color:var(--muted);margin-bottom:10px"></div>
-        <div class="row" style="justify-content:center">
-          <button class="btn btn-gold" onclick="acceptRematch()">Accepter</button>
-          <button class="btn btn-out" onclick="declineRematch()">Refuser</button>
+
+      <!-- Progress -->
+      <div class="progress-card" id="progress-card" style="display:none">
+        <div class="prog-name" id="current-file-name"></div>
+        <div class="prog-bar-wrap"><div class="prog-bar" id="progress-bar"></div></div>
+        <div class="prog-footer">
+          <span class="prog-speed" id="speed-info">—</span>
+          <span class="prog-pct" id="progress-pct">0%</span>
         </div>
       </div>
-      <div id="rematch-default" class="row" style="justify-content:center">
-        <button class="btn btn-gold" id="btn-rematch" onclick="showRematchOpts()" style="display:none">⚔ Revanche</button>
-        <button class="btn btn-out" onclick="resetToSetup()">↩ Nouvelle partie</button>
-      </div>
-    </div>
-  </div>
-  <div class="game-wrap">
-    <div class="side-col" id="side-top">
-      <div class="clock-box" id="clk-opp"><div class="clk-name" id="clk-opp-n">Adversaire</div><div class="clk-time" id="clk-opp-t">—</div></div>
-      <div class="cap-box"><div class="cap-lbl">Captures</div><div class="cap-pcs" id="cap-opp"></div><div class="cap-adv" id="cadv-opp"></div></div>
-    </div>
-    <div class="board-col">
-      <div class="b-wrap">
-        <div class="ranks" id="ranks"></div>
-        <div>
-          <div class="board" id="board"></div>
-          <div class="files" id="files"></div>
+
+      <!-- Received files -->
+      <div class="panel" id="recv-panel" style="display:none">
+        <div class="panel-title">Fichiers reçus</div>
+        <div class="recv-list" id="recv-list"></div>
+        <div style="margin-top:10px;">
+          <button class="btn btn-success btn-f" id="btn-dl-all" onclick="downloadAll()">Tout télécharger</button>
         </div>
       </div>
+
       <div class="ctrl-row">
-        <button class="btn btn-out" id="btn-draw" onclick="offerDraw()">½ Nulle</button>
-        <button class="btn btn-red" id="btn-resign" onclick="resign()">⚑ Abandon</button>
-        <button class="btn btn-out" onclick="flipBoard()">⇅ Retourner</button>
+        <button class="btn btn-danger btn-sm" id="btn-cancel" onclick="cancelCurrentTransfer()" style="display:none">Annuler le transfert</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetToSetup()">Déconnecter</button>
       </div>
-    </div>
-    <div class="side-col" id="side-bottom">
-      <div class="clock-box" id="clk-self"><div class="clk-name" id="clk-self-n">Vous</div><div class="clk-time" id="clk-self-t">—</div></div>
-      <div class="cap-box"><div class="cap-lbl">Captures</div><div class="cap-pcs" id="cap-self"></div><div class="cap-adv" id="cadv-self"></div></div>
-      <div class="moves-box">
-        <div class="plabel" style="margin-bottom:8px">Historique</div>
-        <div class="moves-inner" id="moves-list"></div>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-
-<div class="overlay" id="promo-overlay">
-  <div class="modal"><h3>Promotion</h3><div class="promo-grid" id="promo-grid"></div></div>
-</div>
-<div class="overlay" id="resign-overlay">
-  <div class="modal" style="max-width:320px">
-    <div style="font-size:2rem;margin-bottom:.5rem">⚑</div>
-    <h3 style="margin-bottom:.5rem">Abandonner ?</h3>
-    <p style="font-size:14px;color:var(--muted);margin-bottom:1.5rem;line-height:1.5">Cette action est irréversible.<br>L'adversaire remporte la partie.</p>
-    <div class="row" style="justify-content:center;gap:10px">
-      <button class="btn btn-red" onclick="confirmResign()">⚑ Abandonner</button>
-      <button class="btn btn-out" onclick="cancelResign()">Continuer</button>
     </div>
   </div>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════
-// NETWORK
+// P2P FILE TRANSFER ENGINE — FileP2P
 // ═══════════════════════════════════════════════════
-// Règle de reconnexion, simple et universelle :
-//   Celui qui RESTE connecté devient hôte et affiche un code.
-//   Celui qui REVIENT saisit ce code — comme une première connexion.
-//   Peu importe qui était hôte ou invité avant.
 
-let peer = null;
-let conn = null;
-let myRole = 'host';
-let myColor = 'white';
-let timerSetting = 'none';
-let myActualColor = 'white';
-let roomId = null;
-let savedHostMeta = null;
+let peer = null, conn = null, myRole = 'host', roomId = null, isConnected = false;
 
-let reconnectTimer = null;
-let heartbeatTimer = null;
-let lastHeartbeat = 0;
-const HEARTBEAT_INTERVAL = 4000;
-const HEARTBEAT_TIMEOUT  = 12000;
-const RECONNECT_DELAY    = 3000;
+const CHUNK_SIZE = 64 * 1024;
+let currentTransfer = null;
+let receiveMetadata = null, receiveBuffer = null;
+let speedBytes = 0, speedInterval = null;
+
+// Sender queue
+let fileQueue = []; // [{file, id, status:'wait'|'sending'|'done'|'error'}]
+
+// Received files (stored as blobs, not auto-downloaded)
+let receivedFiles = []; // [{name, size, blob, url}]
 
 const PEERJS_CFG = {
-  host: '0.peerjs.com', port: 443, path: '/', secure: true,
-  config: { iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'turn:a.relay.metered.ca:80',                username:'open', credential:'open' },
-    { urls: 'turn:a.relay.metered.ca:443',               username:'open', credential:'open' },
-    { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username:'open', credential:'open' },
+  host:'0.peerjs.com', port:443, path:'/', secure:true,
+  config:{iceServers:[
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'},
+    {urls:'turn:a.relay.metered.ca:80',username:'open',credential:'open'},
+    {urls:'turn:a.relay.metered.ca:443',username:'open',credential:'open'},
   ]}
 };
 
 function genCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('');
 }
 
-// ─── Ouvrir un Peer en mode hôte avec un code donné ───
-function openHostPeer(code, onOpen) {
-  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
-  roomId = 'chess-' + code;
-  myRole = 'host';
-  peer = new Peer(roomId, PEERJS_CFG);
-  peer.on('open', onOpen);
-  peer.on('connection', (c) => setupConn(c));
-  peer.on('error', (err) => {
-    if (err.type === 'unavailable-id') {
-      setTimeout(() => openHostPeer(genCode(), onOpen), 800);
-    } else {
-      setSbar('e', 'Erreur : ' + err.type);
-    }
-  });
-}
-
-// ─── SETUP INITIAL : hôte ───
+// ─── Host ───
 function hostCreate() {
-  const btn = document.getElementById('btn-gen');
-  btn.disabled = true; btn.textContent = 'Génération…';
-
-  const color = myColor === 'random' ? (Math.random() < .5 ? 'white' : 'black') : myColor;
-  myActualColor = color;
-  const timer = timerSetting === 'custom'
-    ? `c:${document.getElementById('c-min').value||15}:${document.getElementById('c-inc').value||0}`
-    : timerSetting;
-  savedHostMeta = { color, timer };
-
-  openHostPeer(genCode(), () => {
-    const code = roomId.slice(6);
+  const btn=document.getElementById('btn-gen');
+  btn.disabled=true; btn.textContent='Génération...';
+  openHostPeer(genCode(), ()=>{
+    // roomId = 'filep2p-XXXXXX' → code is last 6 chars
+    const code = roomId.slice('filep2p-'.length);
     document.getElementById('out-room-id').textContent = code;
-    document.getElementById('h-offer').style.display = 'block';
-    btn.textContent = 'Code généré ✓';
-    setSbar('w', 'En attente de l’invité… (' + code + ')');
+    document.getElementById('h-offer').style.display='block';
+    btn.textContent='Code généré';
+    setSbar('p','En attente de connexion… ('+code+')');
   });
 }
 
-// ─── SETUP INITIAL : invité ───
+function openHostPeer(code, onOpen) {
+  if(peer){try{peer.destroy()}catch(e){}peer=null;}
+  roomId='filep2p-'+code;
+  myRole='host';
+  peer=new Peer(roomId, PEERJS_CFG);
+  peer.on('open', onOpen);
+  peer.on('connection', c=>setupConnection(c));
+  peer.on('error', err=>{
+    if(err.type==='unavailable-id') setTimeout(()=>openHostPeer(genCode(),onOpen),500);
+    else setSbar('e','Erreur : '+err.type);
+  });
+}
+
+// ─── Guest ───
 function guestJoin() {
-  const input = document.getElementById('in-room-id').value.trim().toUpperCase();
-  if (input.length < 4) { setSbar('e', 'Code trop court'); return; }
-  document.getElementById('btn-join').disabled = true;
+  const input=document.getElementById('in-room-id').value.trim().toUpperCase();
+  if(input.length<4){setSbar('e','Code trop court');return;}
+  document.getElementById('btn-join').disabled=true;
   doJoinAsGuest(input);
 }
 
-// ─── Rejoindre en tant qu'invité (setup initial ou reconnexion) ───
 function doJoinAsGuest(code) {
-  clearReconnect();
-  myRole = 'guest';
-  setSbar('p', 'Connexion…');
-
-  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
-  peer = new Peer(PEERJS_CFG);
-  peer.on('open', () => {
-    const c = peer.connect('chess-' + code, { reliable: true });
-    setupConn(c);
+  myRole='guest'; setSbar('p','Connexion...');
+  if(peer){try{peer.destroy()}catch(e){}peer=null;}
+  peer=new Peer(PEERJS_CFG);
+  peer.on('open',()=>{
+    const c=peer.connect('filep2p-'+code,{reliable:true});
+    setupConnection(c);
   });
-  peer.on('error', () => {
-    setSbar('e', 'Erreur réseau — vérifiez le code');
-    document.getElementById('btn-join').disabled = false;
+  peer.on('error',()=>{
+    setSbar('e','Erreur réseau — code invalide ?');
+    document.getElementById('btn-join').disabled=false;
   });
 }
 
-// ─── Quand quelqu'un se déconnecte : celui qui reste devient hôte ───
-function becomeWaitingHost() {
-  // Peu importe le rôle précédent : on ouvre un nouveau Peer hôte
-  // et on affiche le code dans la bannière de reconnexion.
-  if (!savedHostMeta) savedHostMeta = { color: myActualColor, timer: timerSetting };
+// ─── Connection ───
+function setupConnection(c) {
+  if(conn){try{conn.close()}catch(e){}}
+  conn=c;
+  c.on('open',()=>{
+    isConnected=true;
+    document.getElementById('s-setup').classList.remove('on');
+    document.getElementById('s-transfer').classList.add('on');
+    document.getElementById('transfer-ui').style.display='flex';
+    const badge=document.getElementById('conn-badge');
+    badge.classList.remove('disc');
+    document.getElementById('conn-state').textContent='Connecté';
+    setSbar('c','Connecté ! Prêt pour le transfert.');
+    startSpeedMonitor();
+    // Show/hide panels based on role
+    document.getElementById('sender-panel').style.display = myRole==='host' ? '' : 'none';
+  });
+  c.on('data', raw=>{
+    try{handleMessage(JSON.parse(raw));}
+    catch(e){if(typeof raw==='string'&&raw.startsWith('CHUNK:'))handleChunk(raw);}
+  });
+  c.on('close',()=>onDisconnect());
+  c.on('error',()=>onDisconnect());
+}
 
-  openHostPeer(genCode(), () => {
-    const code = roomId.slice(6);
-    document.getElementById('reconnect-msg').textContent =
-      'Connexion perdue. Donnez ce code à l’adversaire :';
-    document.getElementById('reconnect-room-id').textContent = code;
-    document.getElementById('reconnect-room').style.display = 'block';
-    document.getElementById('reconnect-banner').classList.add('on');
-    setSbar('r', 'En attente de reconnexion… (' + code + ')');
+function onDisconnect() {
+  isConnected=false;
+  if(conn){try{conn.close()}catch(e){}conn=null;}
+  const badge=document.getElementById('conn-badge');
+  badge.classList.add('disc');
+  document.getElementById('conn-state').textContent='Déconnecté';
+  setSbar('e','Connexion perdue');
+  stopSpeedMonitor();
+  document.getElementById('btn-cancel').style.display='none';
+}
+
+// ─── Sender queue ───
+function onFileSelect(files) {
+  if(!files||files.length===0) return;
+  if(!isConnected){alert('Veuillez d\'abord établir une connexion.');return;}
+  for(const f of files){
+    fileQueue.push({file:f, id:Date.now()+Math.random(), status:'wait'});
+  }
+  renderQueue();
+  document.getElementById('file-input').value='';
+}
+
+function renderQueue() {
+  const qs=document.getElementById('queue-section');
+  const list=document.getElementById('queue-list');
+  if(fileQueue.length===0){qs.style.display='none';return;}
+  qs.style.display='block';
+
+  const sendingOrDone = fileQueue.some(f=>f.status==='sending'||f.status==='done');
+  document.getElementById('btn-send-all').disabled = sendingOrDone;
+
+  list.innerHTML=fileQueue.map(f=>`
+    <div class="queue-item" data-id="${f.id}">
+      <div class="queue-item-name" title="${esc(f.file.name)}">${esc(truncName(f.file.name,38))}</div>
+      <div class="queue-item-size">${fmtSize(f.file.size)}</div>
+      <div class="queue-item-status ${f.status}">
+        ${f.status==='wait'?'En attente':f.status==='sending'?'Envoi…':f.status==='done'?'Envoyé':'Erreur'}
+      </div>
+      ${f.status==='wait'?`<button class="queue-item-rm" onclick="removeFromQueue('${f.id}')" title="Retirer">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`:'<span style="width:18px;display:inline-block"></span>'}
+    </div>
+  `).join('');
+}
+
+function removeFromQueue(id) {
+  fileQueue=fileQueue.filter(f=>String(f.id)!==String(id));
+  renderQueue();
+}
+
+function clearQueue() {
+  fileQueue=fileQueue.filter(f=>f.status==='sending');
+  renderQueue();
+}
+
+async function startSendQueue() {
+  const waiting=fileQueue.filter(f=>f.status==='wait');
+  for(const item of waiting){
+    item.status='sending'; renderQueue();
+    await sendFileFn(item.file);
+    item.status='done'; renderQueue();
+  }
+}
+
+// ─── Sending ───
+async function sendFileFn(file) {
+  return new Promise(resolve=>{
+    if(!conn||!conn.open){resolve();return;}
+    const totalChunks=Math.ceil(file.size/CHUNK_SIZE);
+    document.getElementById('progress-card').style.display='block';
+    document.getElementById('current-file-name').textContent='Envoi : '+file.name;
+    document.getElementById('btn-cancel').style.display='inline-flex';
+    conn.send(JSON.stringify({type:'file-metadata',name:file.name,size:file.size,totalChunks}));
+    currentTransfer={file,totalChunks,currentChunk:0,cancelled:false,onDone:resolve};
+    speedBytes=0;
+    processNextChunk();
   });
 }
 
-// ─── CONNEXION COMMUNE ───
-function setupConn(c) {
-  if (conn) { try { conn.close(); } catch(e){} }
-  conn = c;
-
-  c.on('open', () => {
-    clearReconnect();
-    lastHeartbeat = Date.now();
-
-    if (myRole === 'host') {
-      if (gameActive) {
-        sendResync(c);
-        setSbar('c', 'Adversaire reconnecté !');
-        document.getElementById('reconnect-banner').classList.remove('on');
-        document.getElementById('reconnect-room').style.display = 'none';
-      } else {
-        c.send(JSON.stringify({ t: 'init', color: savedHostMeta.color, timer: savedHostMeta.timer }));
-        setSbar('c', 'Connecté !');
-        setTimeout(startGame, 400);
-      }
-    }
-    // Côté invité : on attend init ou resync de l'hôte
-
-    startHeartbeat();
-  });
-
-  c.on('data', (raw) => {
-    lastHeartbeat = Date.now();
-    let m;
-    try { m = JSON.parse(raw); } catch(e) { return; }
-    if (m.t === 'hb') return;
-    handleMsg(m);
-  });
-
-  c.on('close', onConnLost);
-  c.on('error', onConnLost);
-}
-
-function sendResync(c) {
-  const _now = Date.now();
-  const _clocks = {
-    w: (timerSetting!=='none' && turnStart!==null && G.turn==='w')
-        ? Math.max(0, clocks.w - (_now - turnStart)) : clocks.w,
-    b: (timerSetting!=='none' && turnStart!==null && G.turn==='b')
-        ? Math.max(0, clocks.b - (_now - turnStart)) : clocks.b,
+function processNextChunk() {
+  if(!currentTransfer||currentTransfer.cancelled){
+    finishTransfer(); return;
+  }
+  const {file,totalChunks,currentChunk}=currentTransfer;
+  if(currentChunk>=totalChunks){
+    conn.send(JSON.stringify({type:'file-complete'}));
+    updateProgress(file.size,file.size);
+    document.getElementById('progress-pct').textContent='100%';
+    finishTransfer(); return;
+  }
+  const start=currentChunk*CHUNK_SIZE;
+  const chunk=file.slice(start,Math.min(start+CHUNK_SIZE,file.size));
+  const reader=new FileReader();
+  reader.onload=e=>{
+    if(!currentTransfer||currentTransfer.cancelled){finishTransfer();return;}
+    conn.send('CHUNK:'+currentChunk+':'+btoa(e.target.result));
+    speedBytes+=CHUNK_SIZE;
+    const sent=(currentChunk+1)*CHUNK_SIZE;
+    updateProgress(Math.min(sent,file.size),file.size);
+    document.getElementById('progress-pct').textContent=Math.floor((currentChunk+1)/totalChunks*100)+'%';
+    currentTransfer.currentChunk++;
+    setTimeout(processNextChunk, 5);
   };
-  c.send(JSON.stringify({
-    t: 'resync',
-    board: G.board, turn: G.turn, castling: G.castling, ep: G.ep,
-    capW, capB, moveHist, halfClock, fullNum, lastMove,
-    clocks: _clocks, turnStart, timerSetting, now: _now,
-    guestColor: savedHostMeta.color === 'white' ? 'black' : 'white'
-  }));
+  reader.readAsBinaryString(chunk);
 }
 
-function onConnLost() {
-  if (!conn && !gameActive) return;
-  stopHeartbeat();
-  conn = null;
+function finishTransfer() {
+  const cb=currentTransfer&&currentTransfer.onDone;
+  currentTransfer=null;
+  document.getElementById('progress-card').style.display='none';
+  document.getElementById('btn-cancel').style.display='none';
+  if(cb) setTimeout(cb, 100);
+}
 
-  if (!gameActive) {
-    setSbar('e', 'Connexion perdue');
-    return;
+function cancelCurrentTransfer() {
+  if(currentTransfer){
+    currentTransfer.cancelled=true;
+    const item=fileQueue.find(f=>f.status==='sending');
+    if(item){item.status='error'; renderQueue();}
   }
-
-  // Celui qui reste affiche un code. Celui qui revient le saisira.
-  becomeWaitingHost();
+  if(conn&&conn.open) conn.send(JSON.stringify({type:'transfer-cancel'}));
 }
 
-function cpReconnectRoom(btn) {
-  const code = document.getElementById('reconnect-room-id').textContent;
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(code).then(() => {
-      const o = btn.textContent; btn.textContent = '✓ Copié !';
-      setTimeout(() => btn.textContent = o, 1400);
-    });
-  } else {
-    const o = btn.textContent; btn.textContent = '✓ ' + code;
-    setTimeout(() => btn.textContent = o, 2000);
-  }
-}
-
-function clearReconnect() {
-  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-}
-
-function startHeartbeat() {
-  stopHeartbeat();
-  heartbeatTimer = setInterval(() => {
-    send({ t: 'hb' });
-    if (Date.now() - lastHeartbeat > HEARTBEAT_TIMEOUT) onConnLost();
-  }, HEARTBEAT_INTERVAL);
-}
-
-function stopHeartbeat() {
-  if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
-}
-
-function send(o) {
-  if (conn && conn.open) {
-    try { conn.send(JSON.stringify(o)); } catch(e) {}
+// ─── Receiving ───
+function handleMessage(msg) {
+  switch(msg.type){
+    case 'file-metadata':
+      receiveMetadata={name:msg.name,size:msg.size,totalChunks:msg.totalChunks,receivedChunks:0};
+      receiveBuffer=new Array(msg.totalChunks);
+      document.getElementById('progress-card').style.display='block';
+      document.getElementById('current-file-name').textContent='Réception : '+msg.name;
+      updateProgress(0,msg.size);
+      break;
+    case 'file-complete':
+      if(receiveBuffer&&receiveMetadata) assembleFile();
+      break;
+    case 'transfer-cancel':
+      receiveBuffer=null; receiveMetadata=null;
+      document.getElementById('progress-card').style.display='none';
+      break;
   }
 }
 
-function cpRoom() {
-  const txt = document.getElementById('out-room-id').textContent;
-  const btn = event.target;
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(txt).then(() => {
-      const o = btn.textContent; btn.textContent = '✓ Copié !';
-      setTimeout(() => btn.textContent = o, 1400);
-    });
-  } else {
-    const o = btn.textContent; btn.textContent = '✓ ' + txt;
-    setTimeout(() => btn.textContent = o, 2000);
+function handleChunk(raw) {
+  const parts=raw.split(':');
+  if(parts.length<3) return;
+  const idx=parseInt(parts[1]);
+  const data=parts.slice(2).join(':');
+  if(receiveBuffer&&receiveMetadata&&idx<receiveMetadata.totalChunks){
+    receiveBuffer[idx]=data;
+    receiveMetadata.receivedChunks++;
+    speedBytes+=CHUNK_SIZE;
+    const bytes=receiveMetadata.receivedChunks*CHUNK_SIZE;
+    updateProgress(Math.min(bytes,receiveMetadata.size),receiveMetadata.size);
+    document.getElementById('progress-pct').textContent=
+      Math.floor(receiveMetadata.receivedChunks/receiveMetadata.totalChunks*100)+'%';
+    if(receiveMetadata.receivedChunks===receiveMetadata.totalChunks) assembleFile();
   }
 }
 
-// ═══════════════════════════════════════════════════
-// CHESS ENGINE
-// ═══════════════════════════════════════════════════
-let G={board:null,turn:'w',castling:{wK:1,wQ:1,bK:1,bQ:1},ep:null};
-let selected=null,legalMoves=[],lastMove=null,gameActive=false;
-let capW=[],capB=[],moveHist=[],halfClock=0,fullNum=1;
-let pendingPromo=null,boardFlipped=false;
-let clocks={w:0,b:0},increment=0,clockIv=null,clockOn=false;
-let turnStart=null;
-
-const UNI={K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
-const isW=p=>p&&p===p.toUpperCase();
-const isB=p=>p&&p!==p.toUpperCase();
-const pc2=p=>!p?null:isW(p)?'w':'b';
-const opp=c=>c==='w'?'b':'w';
-
-function initBoard(){
-  const back=['R','N','B','Q','K','B','N','R'];
-  G.board=Array(8).fill(null).map(()=>Array(8).fill(null));
-  for(let c=0;c<8;c++){G.board[0][c]=back[c].toLowerCase();G.board[1][c]='p';G.board[6][c]='P';G.board[7][c]=back[c];}
-  G.turn='w';G.castling={wK:1,wQ:1,bK:1,bQ:1};G.ep=null;
-  capW=[];capB=[];moveHist=[];halfClock=0;fullNum=1;lastMove=null;selected=null;legalMoves=[];
-}
-
-function attacked(tr,tc,byColor,b){
-  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
-    const p=b[r][c];if(!p||pc2(p)!==byColor)continue;
-    const pt=p.toLowerCase();
-    if(pt==='p'){const d=byColor==='w'?-1:1;if(r+d===tr&&(c-1===tc||c+1===tc))return true;}
-    else if(pt==='n'){for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])if(r+dr===tr&&c+dc===tc)return true;}
-    else if(pt==='k'){if(Math.abs(r-tr)<=1&&Math.abs(c-tc)<=1)return true;}
-    if(pt==='r'||pt==='q'){for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){let rr=r+dr,cc=c+dc;while(rr>=0&&rr<8&&cc>=0&&cc<8){if(rr===tr&&cc===tc)return true;if(b[rr][cc])break;rr+=dr;cc+=dc;}}}
-    if(pt==='b'||pt==='q'){for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]]){let rr=r+dr,cc=c+dc;while(rr>=0&&rr<8&&cc>=0&&cc<8){if(rr===tr&&cc===tc)return true;if(b[rr][cc])break;rr+=dr;cc+=dc;}}}
+function assembleFile() {
+  if(!receiveBuffer||!receiveMetadata) return;
+  try{
+    let bin='';
+    for(let i=0;i<receiveBuffer.length;i++) bin+=atob(receiveBuffer[i]);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    const blob=new Blob([bytes]);
+    const url=URL.createObjectURL(blob);
+    receivedFiles.push({name:receiveMetadata.name,size:receiveMetadata.size,blob,url});
+    renderReceivedFiles();
+    document.getElementById('progress-card').style.display='none';
+    receiveBuffer=null; receiveMetadata=null;
+  } catch(e){
+    console.error('Assembly error:',e);
+    document.getElementById('progress-card').style.display='none';
   }
-  return false;
 }
 
-function inCheck(color,b){
-  let kr=-1,kc=-1;
-  for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]===(color==='w'?'K':'k')){kr=r;kc=c;}
-  return kr<0||attacked(kr,kc,opp(color),b);
+function renderReceivedFiles() {
+  const panel=document.getElementById('recv-panel');
+  const list=document.getElementById('recv-list');
+  if(receivedFiles.length===0){panel.style.display='none';return;}
+  panel.style.display='block';
+  list.innerHTML=receivedFiles.map((f,i)=>`
+    <div class="recv-item">
+      <div class="recv-item-name" title="${esc(f.name)}">${esc(truncName(f.name,35))}</div>
+      <div class="recv-item-size">${fmtSize(f.size)}</div>
+      <button class="recv-dl-btn" onclick="downloadFile(${i})">Télécharger</button>
+    </div>
+  `).join('');
 }
 
-function pseudoMoves(fr,fc,b,ep){
-  const p=b[fr][fc];if(!p)return[];
-  const color=pc2(p),pt=p.toLowerCase(),moves=[];
-  const add=(tr,tc,sp)=>{if(tr>=0&&tr<8&&tc>=0&&tc<8&&pc2(b[tr][tc])!==color)moves.push({fr,fc,tr,tc,sp:sp||null});};
-  if(pt==='p'){
-    const dir=color==='w'?-1:1,sr=color==='w'?6:1,pr=color==='w'?0:7;
-    if(fr+dir>=0&&fr+dir<8&&!b[fr+dir][fc]){add(fr+dir,fc,fr+dir===pr?'promo':null);if(fr===sr&&!b[fr+2*dir][fc])add(fr+2*dir,fc,'dp');}
-    for(const dc of[-1,1]){const tr2=fr+dir,tc2=fc+dc;if(tc2>=0&&tc2<8){if(pc2(b[tr2]?.[tc2])===opp(color))add(tr2,tc2,tr2===pr?'promo':null);else if(ep&&ep[0]===tr2&&ep[1]===tc2)moves.push({fr,fc,tr:tr2,tc:tc2,sp:'ep'});}}
-  }else if(pt==='n'){for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])add(fr+dr,fc+dc);}
-  else if(pt==='k'){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])add(fr+dr,fc+dc);}
-  else if(pt==='r'||pt==='q'){for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){let r=fr+dr,c=fc+dc;while(r>=0&&r<8&&c>=0&&c<8){add(r,c);if(b[r][c])break;r+=dr;c+=dc;}}}
-  if(pt==='b'||pt==='q'){for(const[dr,dc]of[[1,1],[1,-1],[-1,1],[-1,-1]]){let r=fr+dr,c=fc+dc;while(r>=0&&r<8&&c>=0&&c<8){add(r,c);if(b[r][c])break;r+=dr;c+=dc;}}}
-  return moves;
+function downloadFile(i) {
+  const f=receivedFiles[i];
+  if(!f) return;
+  const a=document.createElement('a');
+  a.href=f.url; a.download=f.name; a.click();
 }
 
-function applyMv(mv,b,promo='q'){
-  const nb=b.map(r=>[...r]);
-  const p=nb[mv.fr][mv.fc];
-  nb[mv.tr][mv.tc]=p;nb[mv.fr][mv.fc]=null;
-  if(mv.sp==='ep')nb[mv.fr][mv.tc]=null;
-  if(mv.sp==='ck'){nb[mv.tr][5]=nb[mv.tr][7];nb[mv.tr][7]=null;}
-  if(mv.sp==='cq'){nb[mv.tr][3]=nb[mv.tr][0];nb[mv.tr][0]=null;}
-  if(mv.sp==='promo')nb[mv.tr][mv.tc]=(pc2(p)==='w'?promo.toUpperCase():promo.toLowerCase());
-  return nb;
+function downloadAll() {
+  receivedFiles.forEach((_,i)=>setTimeout(()=>downloadFile(i),i*120));
 }
 
-function legalMovesFor(fr,fc,b,cast,ep){
-  const p=b[fr][fc];if(!p)return[];
-  const color=pc2(p),pt=p.toLowerCase(),row=color==='w'?7:0;
-  let moves=pseudoMoves(fr,fc,b,ep);
-  if(pt==='k'&&fr===row&&fc===4){
-    const oo=opp(color);
-    if(cast[color+'K']&&!b[row][5]&&!b[row][6]&&!attacked(row,4,oo,b)&&!attacked(row,5,oo,b)&&!attacked(row,6,oo,b))
-      moves.push({fr,fc,tr:row,tc:6,sp:'ck'});
-    if(cast[color+'Q']&&!b[row][3]&&!b[row][2]&&!b[row][1]&&!attacked(row,4,oo,b)&&!attacked(row,3,oo,b)&&!attacked(row,2,oo,b))
-      moves.push({fr,fc,tr:row,tc:2,sp:'cq'});
-  }
-  return moves.filter(mv=>{const nb=applyMv(mv,b,'q');return!inCheck(color,nb);});
+// ─── Progress ───
+function updateProgress(done,total){
+  const pct=total>0?done/total*100:0;
+  document.getElementById('progress-bar').style.width=pct+'%';
 }
 
-function allLegal(color,b,cast,ep){
-  const moves=[];
-  for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(pc2(b[r][c])===color)moves.push(...legalMovesFor(r,c,b,cast,ep));
-  return moves;
+// ─── Speed ───
+function startSpeedMonitor(){
+  if(speedInterval) clearInterval(speedInterval);
+  let last=0;
+  speedInterval=setInterval(()=>{
+    const diff=speedBytes-last;
+    document.getElementById('speed-info').textContent=
+      diff>0 ? fmtSpeed(diff*8/1024) : '—';
+    last=speedBytes; speedBytes=0;
+  },1000);
 }
+function stopSpeedMonitor(){if(speedInterval){clearInterval(speedInterval);speedInterval=null;}}
+function fmtSpeed(kbps){return kbps>=1024?(kbps/1024).toFixed(1)+' Mbps':kbps.toFixed(0)+' Kbps';}
 
-function insuffMat(b){
-  const ps=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c])ps.push(b[r][c].toLowerCase());
-  if(ps.length===2)return true;
-  if(ps.length===3&&(ps.filter(p=>p==='b').length===1||ps.filter(p=>p==='n').length===1))return true;
-  if(ps.length===4&&ps.filter(p=>p==='b').length===2&&ps.filter(p=>p==='k').length===2){
-    const bishops=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]?.toLowerCase()==='b')bishops.push((r+c)%2);
-    if(bishops[0]===bishops[1])return true;
-  }
-  return false;
-}
-
-function toAlg(r,c){return String.fromCharCode(97+c)+(8-r);}
-
-function toSAN(mv,b,cast,ep){
-  const p=b[mv.fr][mv.fc],pt=p.toLowerCase();
-  if(mv.sp==='ck')return'O-O';if(mv.sp==='cq')return'O-O-O';
-  const cap=b[mv.tr][mv.tc]||(mv.sp==='ep');
-  let s='';
-  if(pt!=='p'){
-    s+=p.toUpperCase();
-    const ambig=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if((r!==mv.fr||c!==mv.fc)&&b[r][c]===p){const ml=legalMovesFor(r,c,b,cast,ep);if(ml.some(m=>m.tr===mv.tr&&m.tc===mv.tc))ambig.push([r,c]);}
-    if(ambig.length){const sameFile=ambig.some(([,c])=>c===mv.fc);s+=sameFile?String.fromCharCode(97+mv.fr):'';if(!sameFile)s+=String.fromCharCode(97+mv.fc);}
-  }else if(cap)s+=String.fromCharCode(97+mv.fc);
-  if(cap)s+='x';
-  s+=toAlg(mv.tr,mv.tc);
-  if(mv.sp==='promo')s+='='+(mv.promo||'q').toUpperCase();
-  return s;
-}
-
-// ═══════════════════════════════════════════════════
-// GAME FLOW
-// ═══════════════════════════════════════════════════
-function startGame(){
-  document.getElementById('s-setup').classList.remove('on');
-  document.getElementById('s-game').classList.add('on');
-  gameActive=true;boardFlipped=myActualColor==='black';
-  initBoard();initClocks();buildBoard();renderBoard();renderSide();renderMoves();
-  updateClkNames();
-  startClockDisplay();
-  setSbar('c', 'Connecté — ' + (myActualColor === 'white' ? 'Vous jouez Blancs' : 'Vous jouez Noirs'));
-}
-
-function handleMsg(m){
-  if(m.t==='init'){
-    // Reçu par l'invité : config de la partie
-    myActualColor = m.color === 'white' ? 'black' : 'white';
-    timerSetting = m.timer;
-    setSbar('c','Connecté !');
-    setTimeout(startGame,400);
-  }
-  if(m.t==='resync'){
-    // Resync après reconnexion (invité seulement)
-    // Restaurer la couleur au cas où la page a été rechargée
-    if(m.guestColor) myActualColor = m.guestColor;
-    G.board=m.board;G.turn=m.turn;G.castling=m.castling;G.ep=m.ep;
-    capW=m.capW;capB=m.capB;moveHist=m.moveHist;
-    halfClock=m.halfClock;fullNum=m.fullNum;lastMove=m.lastMove;
-    timerSetting=m.timerSetting;
-    // Restaurer les horloges en recalant turnStart sur l'horloge locale.
-    // L'hôte envoie m.now=Date.now() au moment de l'envoi ; on soustrait
-    // le temps de transit du tour actif pour ne pas le compter deux fois.
-    clocks=m.clocks;
-    if(m.turnStart!==null && m.now!==undefined){
-      const transit=Date.now()-m.now;
-      clocks[m.turn]=Math.max(0,clocks[m.turn]-transit);
-    }
-    turnStart=(m.turnStart!==null)?Date.now():null;
-
-    document.getElementById('reconnect-banner').classList.remove('on');
-    document.getElementById('reconnect-room').style.display='none';
-    setSbar('c','Reconnecté — partie en cours');
-
-    const inGame=document.getElementById('s-game').classList.contains('on');
-    if(!inGame){
-      document.getElementById('s-setup').classList.remove('on');
-      document.getElementById('s-game').classList.add('on');
-      boardFlipped=myActualColor==='black';
-      buildBoard();updateClkNames();
-    }
-    gameActive=true;
-    if(clockIv){clearInterval(clockIv);clockIv=null;}
-    startClockDisplay();
-    renderBoard();renderSide();renderMoves();
-  }
-  if(m.t==='mv')recvMove(m);
-  if(m.t==='draw')showDrawOffer();
-  if(m.t==='draw-ok')endGame('draw-agreed');
-  if(m.t==='draw-no'){/* nothing */}
-  if(m.t==='resign')endGame('opp-resign');
-  if(m.t==='flag')endGame('flag-opp');
-  if(m.t==='rematch-offer')showRematchIncoming(m);
-  if(m.t==='rematch-ok')doRematch(m.c,m.timer);
-  if(m.t==='rematch-no')cancelRematch(true);
-  if(m.t==='quit')oppQuit();
-}
-
-function recvMove(m){
-  doMove({fr:m.fr,fc:m.fc,tr:m.tr,tc:m.tc,sp:m.sp||null,promo:m.promo||'q',ts:m.ts},false,undefined,m.ts);
-}
-
-function clickSq(r,c){
-  if(!gameActive)return;
-  const myC=myActualColor==='white'?'w':'b';
-  if(G.turn!==myC)return;
-  const p=G.board[r][c];
-  if(selected){
-    const mv=legalMoves.find(m=>m.tr===r&&m.tc===c);
-    if(mv){
-      if(mv.sp==='promo'){pendingPromo=mv;showPromo(myC);return;}
-      doMove(mv,true);return;
-    }
-    if(p&&pc2(p)===myC){selectSq(r,c);return;}
-    selected=null;legalMoves=[];renderBoard();return;
-  }
-  if(p&&pc2(p)===myC)selectSq(r,c);
-}
-
-function selectSq(r,c){
-  selected={r,c};legalMoves=legalMovesFor(r,c,G.board,G.castling,G.ep);renderBoard();
-}
-
-function doMove(mv,isMine,promo,ts){
-  promo=promo||mv.promo||'q';
-  if(ts===undefined)ts=isMine?Date.now():mv.ts;
-  const p=G.board[mv.fr][mv.fc];
-  const cap=G.board[mv.tr][mv.tc]||(mv.sp==='ep'?G.board[mv.fr][mv.tc]:null);
-  const san=toSAN(mv,G.board,G.castling,G.ep);
-  G.board=applyMv(mv,G.board,promo);
-
-  if(p==='K'){G.castling.wK=0;G.castling.wQ=0;}
-  if(p==='k'){G.castling.bK=0;G.castling.bQ=0;}
-  if(p==='R'){if(mv.fc===7)G.castling.wK=0;if(mv.fc===0)G.castling.wQ=0;}
-  if(p==='r'){if(mv.fc===7)G.castling.bK=0;if(mv.fc===0)G.castling.bQ=0;}
-  if(mv.tr===0&&mv.tc===7)G.castling.bK=0;if(mv.tr===0&&mv.tc===0)G.castling.bQ=0;
-  if(mv.tr===7&&mv.tc===7)G.castling.wK=0;if(mv.tr===7&&mv.tc===0)G.castling.wQ=0;
-
-  G.ep=mv.sp==='dp'?[mv.fr+(mv.tr-mv.fr)/2,mv.fc]:null;
-  if(cap){if(pc2(p)==='w')capW.push(cap);else capB.push(cap);}
-  if(p.toLowerCase()==='p'||cap)halfClock=0;else halfClock++;
-  if(G.turn==='b')fullNum++;
-
-  const nextTurn=opp(G.turn);
-  const chk=inCheck(nextTurn,G.board);
-  const mat=chk&&allLegal(nextTurn,G.board,G.castling,G.ep).length===0;
-  const finalSan=san+(mat?'#':chk?'+':'');
-  moveHist.push({san:finalSan,from:[mv.fr,mv.fc],to:[mv.tr,mv.tc]});
-
-  lastMove={fr:mv.fr,fc:mv.fc,tr:mv.tr,tc:mv.tc};
-  selected=null;legalMoves=[];
-
-  applyClockOnMove(G.turn, ts);
-  G.turn=nextTurn;
-
-  if(isMine)send({t:'mv',fr:mv.fr,fc:mv.fc,tr:mv.tr,tc:mv.tc,sp:mv.sp||null,promo,ts});
-
-  renderBoard();renderSide();renderMoves();
-
-  const stale=!chk&&allLegal(G.turn,G.board,G.castling,G.ep).length===0;
-  const insuf=insuffMat(G.board);
-  const fifty=halfClock>=100;
-  if(mat){endGame(isMine?'win':'loss');return;}
-  if(stale){endGame('stalemate');return;}
-  if(insuf){endGame('insufficient');return;}
-  if(fifty){endGame('fifty');return;}
-}
-
-// ═══════════════════════════════════════════════════
-// PROMOTION
-// ═══════════════════════════════════════════════════
-function showPromo(color){
-  const pieces=color==='w'?['Q','R','B','N']:['q','r','b','n'];
-  const g=document.getElementById('promo-grid');g.innerHTML='';
-  pieces.forEach(pp=>{
-    const d=document.createElement('div');d.className='pp';
-    d.style.color=color==='w'?'#f5efe0':'#1a1510';
-    d.style.background=color==='w'?'var(--bs)':'var(--ws)';
-    d.textContent=UNI[pp];
-    d.onclick=()=>{document.getElementById('promo-overlay').classList.remove('on');if(pendingPromo){const mv={...pendingPromo,promo:pp.toLowerCase()};pendingPromo=null;doMove(mv,true,pp.toLowerCase());}};
-    g.appendChild(d);
-  });
-  document.getElementById('promo-overlay').classList.add('on');
-}
-
-// ═══════════════════════════════════════════════════
-// CLOCKS
-// ═══════════════════════════════════════════════════
-function parseTimer(s){
-  if(s==='none'||!s)return{ms:0,inc:0};
-  if(s.startsWith('c:')){const[,m,i]=s.split(':');return{ms:parseInt(m)*60000,inc:parseInt(i)*1000};}
-  const[m,i]=(s.split('+').map(Number));return{ms:m*60000,inc:(i||0)*1000};
-}
-
-function initClocks(){
-  const{ms,inc}=parseTimer(timerSetting);
-  clocks={w:ms,b:ms};increment=inc;
-  turnStart=null;
-  renderClkTimes();
-}
-
-function applyClockOnMove(movedColor, ts){
-  if(timerSetting==='none')return;
-  if(turnStart!==null){
-    const elapsed=ts-turnStart;
-    clocks[movedColor]=Math.max(0, clocks[movedColor]-elapsed);
-  }
-  clocks[movedColor]+=increment;
-  turnStart=ts;
-}
-
-function startClockDisplay(){
-  if(timerSetting==='none')return;
-  if(clockIv)clearInterval(clockIv);
-  clockIv=setInterval(()=>{
-    if(!gameActive||timerSetting==='none')return;
-    renderClkTimes();
-    const myC=myActualColor==='white'?'w':'b';
-    if(G.turn===myC&&turnStart!==null){
-      const live=clocks[myC]-(Date.now()-turnStart);
-      if(live<=0){
-        clocks[myC]=0;renderClkTimes();
-        clearInterval(clockIv);clockIv=null;
-        endGame('flag-self');
-        send({t:'flag'});
-      }
-    }
-  },100);
-}
-
-function getLiveTime(color){
-  if(timerSetting==='none')return 0;
-  if(turnStart===null||G.turn!==color)return clocks[color];
-  return Math.max(0, clocks[color]-(Date.now()-turnStart));
-}
-
-function fmtTime(ms){
-  if(ms<=0)return'0:00';
-  const s=Math.ceil(ms/1000),m=Math.floor(s/60),sc=s%60;
-  return m+':'+(sc<10?'0':'')+sc;
-}
-
-function renderClkTimes(){
-  if(timerSetting==='none')return;
-  const sc=myActualColor==='white'?'w':'b',oc=opp(sc);
-  const st=getLiveTime(sc),ot=getLiveTime(oc);
-  document.getElementById('clk-self-t').textContent=fmtTime(st);
-  document.getElementById('clk-opp-t').textContent=fmtTime(ot);
-  const sb=document.getElementById('clk-self'),ob=document.getElementById('clk-opp');
-  sb.classList.toggle('active',G.turn===sc);ob.classList.toggle('active',G.turn===oc);
-  sb.classList.toggle('low',st<30000&&G.turn===sc);
-  ob.classList.toggle('low',ot<30000&&G.turn===oc);
-}
-
-function updateClkNames(){
-  const sw=myActualColor==='white';
-  document.getElementById('clk-self-n').textContent=`Vous (${sw?'♔ Blancs':'♚ Noirs'})`;
-  document.getElementById('clk-opp-n').textContent=`Adversaire (${sw?'♚ Noirs':'♔ Blancs'})`;
-}
-
-// ═══════════════════════════════════════════════════
-// BOARD RENDER
-// ═══════════════════════════════════════════════════
-function buildBoard(){
-  const bDiv=document.getElementById('board'),rDiv=document.getElementById('ranks'),fDiv=document.getElementById('files');
-  bDiv.innerHTML='';rDiv.innerHTML='';fDiv.innerHTML='';
-  const files=['a','b','c','d','e','f','g','h'],ranks=['8','7','6','5','4','3','2','1'];
-  for(let vi=0;vi<8;vi++){
-    const r=boardFlipped?7-vi:vi;
-    const rd=document.createElement('div');rd.className='coord';rd.textContent=ranks[r];rDiv.appendChild(rd);
-    for(let vj=0;vj<8;vj++){
-      const c=boardFlipped?7-vj:vj;
-      const sq=document.createElement('div');
-      sq.className='sq '+((r+c)%2===0?'lt':'dk');
-      sq.dataset.r=r;sq.dataset.c=c;
-      sq.onclick=()=>clickSq(+sq.dataset.r,+sq.dataset.c);
-      bDiv.appendChild(sq);
-    }
-  }
-  for(let vj=0;vj<8;vj++){const c=boardFlipped?7-vj:vj;const fd=document.createElement('div');fd.className='coord';fd.textContent=files[c];fDiv.appendChild(fd);}
-}
-
-function renderBoard(){
-  if(!document.getElementById('board').children.length)buildBoard();
-  const myC=myActualColor==='white'?'w':'b';
-  const movSet=new Set(legalMoves.map(m=>m.tr*8+m.tc));
-  document.querySelectorAll('.sq').forEach(sq=>{
-    const r=+sq.dataset.r,c=+sq.dataset.c;
-    const base=(r+c)%2===0?'lt':'dk';
-    const isSel=selected&&selected.r===r&&selected.c===c;
-    const isMov=movSet.has(r*8+c);
-    const isLst=lastMove&&((lastMove.fr===r&&lastMove.fc===c)||(lastMove.tr===r&&lastMove.tc===c));
-    const isChk=G.board[r][c]===(myC==='w'?'K':'k')&&inCheck(myC,G.board);
-    let cls='sq '+base;
-    if(isChk)cls+=' chk';
-    else if(isSel)cls+=' sel';
-    else if(isLst)cls+=' lst';
-    if(isMov)cls+=' mov'+(G.board[r][c]?' occ':'');
-    if(!gameActive)cls+=' no-hover';
-    sq.className=cls;
-    sq.innerHTML='';
-    const p=G.board[r][c];
-    if(p){
-      const d=document.createElement('div');d.className='piece';
-      d.style.color=isW(p)?'#f5efe0':'#1a1510';
-      d.style.textShadow=isW(p)?'0 1px 4px rgba(0,0,0,.9)':'0 1px 3px rgba(255,255,255,.08)';
-      d.textContent=UNI[p];sq.appendChild(d);
-    }
+// ─── Drag & drop ───
+const dz=document.getElementById('drop-zone');
+if(dz){
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault(); dz.classList.remove('drag');
+    onFileSelect(e.dataTransfer.files);
   });
 }
 
-function flipBoard(){boardFlipped=!boardFlipped;buildBoard();renderBoard();}
-
-// ═══════════════════════════════════════════════════
-// SIDE INFO
-// ═══════════════════════════════════════════════════
-const VAL={p:1,n:3,b:3,r:5,q:9};
-function capVal(arr){return arr.reduce((s,p)=>s+(VAL[p.toLowerCase()]||0),0);}
-
-function renderSide(){
-  const sc=myActualColor==='white'?'w':'b',oc=opp(sc);
-  const sC=sc==='w'?capW:capB,oC=sc==='w'?capB:capW;
-  const sv=capVal(sC),ov=capVal(oC);
-  document.getElementById('cap-self').textContent=sC.map(p=>UNI[p]).join('');
-  document.getElementById('cap-opp').textContent=oC.map(p=>UNI[p]).join('');
-  document.getElementById('cadv-self').textContent=sv>ov?`+${sv-ov}`:'';
-  document.getElementById('cadv-opp').textContent=ov>sv?`+${ov-sv}`:'';
-  renderClkTimes();
-}
-
-function renderMoves(){
-  const div=document.getElementById('moves-list');div.innerHTML='';
-  for(let i=0;i<moveHist.length;i+=2){
-    const row=document.createElement('div');row.className='mv-row';
-    row.innerHTML=`<span class="mv-n">${Math.floor(i/2)+1}.</span>`+
-      `<span class="mv-w${i===moveHist.length-1?' cur':''}">${moveHist[i]?.san||''}</span>`+
-      `<span class="mv-b${i+1===moveHist.length-1?' cur':''}">${moveHist[i+1]?.san||''}</span>`;
-    div.appendChild(row);
+// ─── Copy button ───
+function cpRoom(e) {
+  const btn = e ? e.target.closest('.copy-btn') : document.getElementById('copy-btn');
+  const txt = document.getElementById('out-room-id').textContent.trim();
+  function showCopied(){
+    btn.textContent='Copié !'; btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copier'; btn.classList.remove('copied');}, 1600);
   }
-  div.scrollTop=div.scrollHeight;
-}
-
-// ═══════════════════════════════════════════════════
-// GAME END / DRAW / RESIGN
-// ═══════════════════════════════════════════════════
-const ENDS={
-  win:['Victoire !','Échec et mat'],loss:['Défaite','Échec et mat'],
-  stalemate:['Nulle','Pat'],
-  'draw-agreed':['Nulle','Accord mutuel'],
-  insufficient:['Nulle','Matériel insuffisant'],
-  fifty:['Nulle','Règle des 50 coups'],
-  'flag-self':['Défaite','Temps écoulé'],
-  'flag-opp':['Victoire !','Temps adversaire écoulé'],
-  'opp-resign':['Victoire !','Abandon de l\'adversaire'],
-  resign:['Défaite','Abandon'],
-  disconnect:['Partie arrêtée','Adversaire déconnecté'],
-};
-
-function endGame(reason){
-  gameActive=false;
-  if(clockIv){clearInterval(clockIv);clockOn=false;}
-  const[t,s]=ENDS[reason]||['Fin',''];
-  document.getElementById('result-t').textContent=t;
-  document.getElementById('result-s').textContent=s;
-  document.getElementById('result').classList.add('on');
-  document.getElementById('btn-draw').disabled=true;
-  document.getElementById('btn-resign').disabled=true;
-  if(conn&&conn.open){
-    document.getElementById('btn-rematch').style.display='inline-flex';
-    if(myRole==='host'){showRematchOpts();}
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(txt).then(showCopied).catch(()=>fallbackCopy(txt,showCopied));
+  } else {
+    fallbackCopy(txt, showCopied);
   }
 }
-
-function offerDraw(){send({t:'draw'});setSbar('w','Nulle proposée…');}
-function showDrawOffer(){document.getElementById('offer-bar').classList.add('on');}
-function respondDraw(ok){
-  document.getElementById('offer-bar').classList.remove('on');
-  if(ok){send({t:'draw-ok'});endGame('draw-agreed');}else send({t:'draw-no'});
+function fallbackCopy(txt, cb){
+  const ta=document.createElement('textarea');
+  ta.value=txt; ta.style.cssText='position:fixed;top:-9999px;opacity:0';
+  document.body.appendChild(ta); ta.select();
+  try{document.execCommand('copy'); cb();}catch(e){}
+  document.body.removeChild(ta);
 }
-function resign(){document.getElementById('resign-overlay').classList.add('on');}
-function cancelResign(){document.getElementById('resign-overlay').classList.remove('on');}
-function confirmResign(){document.getElementById('resign-overlay').classList.remove('on');send({t:'resign'});endGame('resign');}
 
-// ═══════════════════════════════════════════════════
-// SETUP UI
-// ═══════════════════════════════════════════════════
+// ─── Role ───
 function setRole(r){
   myRole=r;
   document.getElementById('rc-host').classList.toggle('sel',r==='host');
   document.getElementById('rc-guest').classList.toggle('sel',r==='guest');
-  document.getElementById('f-host').style.display=r==='host'?'block':'none';
-  document.getElementById('f-guest').style.display=r==='guest'?'block':'none';
   document.getElementById('host-opts').style.display=r==='host'?'block':'none';
-  // Nettoyer la connexion en cours
-  clearReconnect();stopHeartbeat();
-  if(conn){try{conn.close();}catch(e){}conn=null;}
-  if(peer){try{peer.destroy();}catch(e){}peer=null;}
+  document.getElementById('f-guest').style.display=r==='guest'?'block':'none';
+  if(conn){try{conn.close()}catch(e){}conn=null;}
+  if(peer){try{peer.destroy()}catch(e){}peer=null;}
+  isConnected=false;
 }
-function setColor(c){
-  myColor=c;
-  ['white','black','random'].forEach(x=>document.getElementById('cc-'+x).classList.toggle('sel',x===c));
-}
-function setTimer(t){
-  timerSetting=t;
-  document.querySelectorAll('[id^="tp-"]').forEach(e=>e.classList.remove('sel'));
-  document.getElementById('tp-'+t)?.classList.add('sel');
-  document.getElementById('custom-row').classList.toggle('on',t==='custom');
-}
-function setSbar(type,txt){
-  const b=document.getElementById('sbar');b.className='sbar s'+type;
+
+function setSbar(t,txt){
+  const b=document.getElementById('sbar');
+  b.className='sbar s'+t;
   document.getElementById('sbar-txt').textContent=txt;
 }
 
-// ═══════════════════════════════════════════════════
-// REMATCH
-// ═══════════════════════════════════════════════════
-let rmColor='white',rmTimer='none';
-
-function rmSetColor(c){
-  rmColor=c;
-  ['white','black','random'].forEach(x=>document.getElementById('rm-cc-'+x).classList.toggle('sel',x===c));
-  document.getElementById('rm-cc-white').classList.toggle('w',true);
-  document.getElementById('rm-cc-black').classList.toggle('b',true);
-}
-function rmSetTimer(t){
-  rmTimer=t;
-  ['none','1+0','3+0','3+2','5+0','10+0'].forEach(x=>document.getElementById('rm-tp-'+x)?.classList.remove('sel'));
-  document.getElementById('rm-tp-'+t)?.classList.add('sel');
-}
-
-function showRematchOpts(){
-  const inv=myActualColor==='white'?'black':'white';
-  rmSetColor(inv);rmSetTimer(timerSetting);
-  document.getElementById('rematch-default').style.display='none';
-  document.getElementById('rematch-opts').style.display='block';
-  document.getElementById('rematch-waiting').style.display='none';
-  document.getElementById('rematch-incoming').style.display='none';
-}
-
-function sendRematch(){
-  const color=rmColor==='random'?(Math.random()<.5?'white':'black'):rmColor;
-  send({t:'rematch-offer',c:color,timer:rmTimer});
-  document.getElementById('rematch-opts').style.display='none';
-  document.getElementById('rematch-waiting').style.display='block';
-}
-
-function cancelRematch(fromOpp){
-  document.getElementById('rematch-opts').style.display='none';
-  document.getElementById('rematch-waiting').style.display='none';
-  document.getElementById('rematch-incoming').style.display='none';
-  document.getElementById('rematch-default').style.display='flex';
-  if(!fromOpp)send({t:'rematch-no'});
-}
-
-function showRematchIncoming(m){
-  const colorLabel=m.c==='white'?'Vous jouez Noirs':'Vous jouez Blancs';
-  const timerLabel=m.timer==='none'?'sans limite':m.timer;
-  document.getElementById('rematch-desc').textContent=`${colorLabel} · ${timerLabel}`;
-  document.getElementById('rematch-default').style.display='none';
-  document.getElementById('rematch-opts').style.display='none';
-  document.getElementById('rematch-incoming').style.display='block';
-  document.getElementById('rematch-incoming').dataset.c=m.c;
-  document.getElementById('rematch-incoming').dataset.timer=m.timer;
-}
-
-function acceptRematch(){
-  const panel=document.getElementById('rematch-incoming');
-  const c=panel.dataset.c,timer=panel.dataset.timer;
-  send({t:'rematch-ok',c,timer});
-  doRematch(c,timer);
-}
-
-function declineRematch(){
-  send({t:'rematch-no'});
-  cancelRematch(true);
-}
-
-function doRematch(hostColor,timer){
-  if(myRole==='host'){myActualColor=hostColor;}
-  else{myActualColor=hostColor==='white'?'black':'white';}
-  timerSetting=timer;
-
-  G={board:null,turn:'w',castling:{wK:1,wQ:1,bK:1,bQ:1},ep:null};
-  selected=null;legalMoves=[];lastMove=null;
-  capW=[];capB=[];moveHist=[];halfClock=0;fullNum=1;
-  pendingPromo=null;boardFlipped=false;
-  clocks={w:0,b:0};increment=0;turnStart=null;
-  if(clockIv){clearInterval(clockIv);clockIv=null;}clockOn=false;
-
-  document.getElementById('result').classList.remove('on');
-  document.getElementById('offer-bar').classList.remove('on');
-  document.getElementById('promo-overlay').classList.remove('on');
-  document.getElementById('btn-draw').disabled=false;
-  document.getElementById('btn-resign').disabled=false;
-  document.getElementById('btn-rematch').style.display='none';
-  document.getElementById('rematch-default').style.display='flex';
-  document.getElementById('rematch-opts').style.display='none';
-  document.getElementById('rematch-waiting').style.display='none';
-  document.getElementById('rematch-incoming').style.display='none';
-
-  gameActive=true;boardFlipped=myActualColor==='black';
-  initBoard();initClocks();buildBoard();renderBoard();renderSide();renderMoves();
-  updateClkNames();
-  startClockDisplay();
-}
-
-function oppQuit(){
-  // L'adversaire a quitté — afficher un message intégré puis rediriger
-  if(clockIv){clearInterval(clockIv);clockIv=null;}
-  clockOn=false;
-  clearReconnect();stopHeartbeat();
-  if(conn){try{conn.close();}catch(e){}conn=null;}
-  if(peer){try{peer.destroy();}catch(e){}peer=null;}
-
-  // Afficher le message dans le panneau résultat
-  document.getElementById('result-t').textContent='Partie terminée';
-  document.getElementById('result-s').textContent='L’adversaire a quitté';
-  document.getElementById('result').classList.add('on');
-  document.getElementById('btn-draw').disabled=true;
-  document.getElementById('btn-resign').disabled=true;
-  document.getElementById('btn-rematch').style.display='none';
-  document.getElementById('rematch-default').style.display='flex';
-  // Masquer tous les sous-panneaux de revanche
-  document.getElementById('rematch-opts').style.display='none';
-  document.getElementById('rematch-waiting').style.display='none';
-  document.getElementById('rematch-incoming').style.display='none';
-  gameActive=false;
-}
-
 function resetToSetup(){
-  if(clockIv){clearInterval(clockIv);clockIv=null;}
-  clockOn=false;
-  clearReconnect();stopHeartbeat();
-  send({t:'quit'}); // notifier l'adversaire avant de fermer
-  if(conn){try{conn.close();}catch(e){}conn=null;}
-  if(peer){try{peer.destroy();}catch(e){}peer=null;}
-
-  G={board:null,turn:'w',castling:{wK:1,wQ:1,bK:1,bQ:1},ep:null};
-  selected=null;legalMoves=[];lastMove=null;gameActive=false;
-  capW=[];capB=[];moveHist=[];halfClock=0;fullNum=1;
-  pendingPromo=null;boardFlipped=false;
-  clocks={w:0,b:0};increment=0;turnStart=null;
-  myRole='host';myColor='white';timerSetting='none';myActualColor='white';
-  roomId=null;savedHostMeta=null;
-
-  document.getElementById('result').classList.remove('on');
-  document.getElementById('offer-bar').classList.remove('on');
-  document.getElementById('promo-overlay').classList.remove('on');
-  document.getElementById('reconnect-banner').classList.remove('on');
+  if(conn){try{conn.close()}catch(e){}conn=null;}
+  if(peer){try{peer.destroy()}catch(e){}peer=null;}
+  isConnected=false; currentTransfer=null; receiveBuffer=null; receiveMetadata=null;
+  fileQueue=[]; receivedFiles=[];
+  document.getElementById('s-transfer').classList.remove('on');
+  document.getElementById('s-setup').classList.add('on');
+  document.getElementById('transfer-ui').style.display='none';
+  document.getElementById('progress-card').style.display='none';
+  document.getElementById('recv-panel').style.display='none';
+  document.getElementById('queue-section').style.display='none';
+  document.getElementById('btn-cancel').style.display='none';
+  document.getElementById('conn-badge').classList.add('disc');
+  document.getElementById('conn-state').textContent='Non connecté';
   document.getElementById('btn-gen').disabled=false;
-  document.getElementById('btn-gen').textContent='Générer mon code de salle ♟';
+  document.getElementById('btn-gen').textContent='Générer un code de salle';
   document.getElementById('h-offer').style.display='none';
   document.getElementById('out-room-id').textContent='——';
   document.getElementById('in-room-id').value='';
   document.getElementById('btn-join').disabled=false;
-
-  document.getElementById('btn-draw').disabled=false;
-  document.getElementById('btn-resign').disabled=false;
-
-  document.getElementById('s-game').classList.remove('on');
-  document.getElementById('s-setup').classList.add('on');
-
-  setRole('host');setColor('white');setTimer('none');
-  setSbar('w','En attente…');
+  setRole('host'); setSbar('w','En attente...'); stopSpeedMonitor();
 }
 
+// ─── Utils ───
+function fmtSize(b){
+  if(!b) return '0 B';
+  const k=1024,s=['B','KB','MB','GB','TB'];
+  const i=Math.floor(Math.log(b)/Math.log(k));
+  return (b/Math.pow(k,i)).toFixed(2)+' '+s[i];
+}
+function truncName(n,max){return n.length>max?n.substr(0,max-1)+'…':n;}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
 // Init
-setRole('host');setColor('white');setTimer('none');
-rmSetColor('black');rmSetTimer('none');
+setRole('host');
 </script>
 </body>
 </html>
